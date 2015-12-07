@@ -1,0 +1,98 @@
+# TODO:
+# - add list of 2 files for an icon - for default and pressed state of the button they are placed onto
+# - add listener to the PID folder and all the PID files in it; check for deleted
+# or altered files and make the UI respond to that
+# - add pid component, which will allow launching the same node/launch file multiple
+# times without causing any conflicts with the PID files that store the running processes
+# Right now the PID file takes the name of the ROS package + node/launch file so one of the
+# substrings in the PID file's name have to be different so that
+# - add basic resource management here (see end of file)
+
+# Note: the icons used are taken from http://www.flaticon.com/. The name of each icon contains its author (due to copyright requirements to credit the authors)
+
+# Example for YAML configuration file required by the SR2YamlGuiContainer part of the SR2Dashboard
+modules:
+  - module:
+    name: "Menu Items"
+    buttons:
+    #- button:
+    #  caption: "Emergency stop"
+    #  icon: ""
+      # ...
+
+
+  - module:
+    name: "Services"
+    buttons:
+    - button:
+      caption: "AddTwoInts Server"
+      icon: ""      # Absolute path for icon files or using pkg->resources_dir?
+      rospkg: "lt"
+      rosnode: "add_two_ints_server.py"
+    # ...
+
+
+  - module:
+    name: "Launches"
+    buttons:
+    - button:
+      caption: "SR2 Bringup"
+      icon: ""
+      rospkg: "cob_bringup"
+      roslaunch_files:
+        - "listener2.launch"
+
+# Resources management
+# Add the ability to specify resource paths with scoping!!!
+# This will be used
+# @globalResourcePath: subnode of the "modules" node:
+#
+# modules:
+#   globalResourcePath: "some_root_dir"
+#   - module:
+#       ...
+#   - module:
+#       ...
+#
+# The global resource path affects all module-nodes and represents the root
+# directory for all resources in the configuration file; if empty the default
+# "sr2_dashboard/resources" is assigned
+# -----------------------------------------------------------------------------
+# @moduleResourcePath: subnode of a module node:
+#
+# modules:
+#   globalResourcePath:  "some_root_dir"
+#   - module:
+#       moduleResourcePath: "some_module_dir"
+#       ...
+#   - module:
+#       moduleResourcePath: "some_module_dir"
+#       ...
+#
+# The module resource path is assigned to a single module-node and affects all
+# its components. Internally (in the application) it is concatenated with the 
+# globalResourcePath (if not empty) in order to generate the full path for the
+# module: "some_root_dir/some_module_dir"; if empty the default "sr2_dashboard/re-
+# sources/images" is assigned
+# -----------------------------------------------------------------------------
+#  @componentResourcePath: subnode of a button node (can be expanded if more
+# types of components are added later on)
+# 
+# modules:
+#   globalResourcePath:  "some_root_dir"
+#   - module:
+#       moduleResourcePath: "some_module_dir"
+#       - button:
+#           componentResourcePath: "some_button_dir"
+#       - button:
+#           componentResourcePath: "some_button_dir"
+#       ...
+#   - module:
+#       moduleResourcePath: "some_module_dir"
+#       ...
+#
+# The same applies here as for the moduleResourcePath. After concatenation we get
+# "some_root_dir/some_module_dir/some_button_dir". If empty the path remains as
+# for the module containing the component: "sr2_dashboard/resources/images". This
+# is the final level for lookup for resource and from here the icon subnode extracts
+# the file that will be used as an icon for the component

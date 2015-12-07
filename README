@@ -1,0 +1,2 @@
+The sr2_dashboard.py inside src contains a template example how to include a widget that is shown
+in the dashboard's menu and also can show/hide a larger widget inside the main view of the dashboard

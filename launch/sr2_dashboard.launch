@@ -1,0 +1,3 @@
+<launch>
+  <node name="sr2_dashobard" pkg="sr2_dashboard" type="sr2_dashboard" />
+</launch>

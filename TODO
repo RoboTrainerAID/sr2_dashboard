@@ -1,0 +1,21 @@
+1)Add ability to start cob_bringup (robot.launch) from inside the control view of the SR2 dashboard
+2)Add cob_global_navigation (or something like that) eband.launch (control view again)
+3)Add init button (control view) for base_controller/init, recover and shutdown (add 'rosservice CALL' support to the SR2 dashboard but only for Trigger-type messages)
+4)Add status widget (indicators for battery, emergency stop and state of the system (diagnostics, aggregator blah blah))
+5)Visual feedback for (init/shutdown) and (recover) buttons -> warning: status of init (successful or not) has to be checked -> disable button until init OK
+
+
+
+
+LAYOUT
+left: put 4)
+top: open/close views, statusbar
+right+center: views (1),2),3))
+
+6)Add log output widget (see cob_dashboard and pr2_dashboard)
+7)View for dynamic_reconfigure (convert the YAML config file to ROS-compatible configuration file that can be embedded in the dynamic_reconfigure infrastructure)
+8)Add robot_monitor widget as view
+9)Add rqt_graph widget as view
+10)Add perspective
+11)Add pose view as view (research what it does)
+12)Add TF tree as view

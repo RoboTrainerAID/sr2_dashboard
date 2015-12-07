@@ -1,0 +1,15 @@
+widgets:
+  - w1:
+    workspace: &wsName "catkin_ws"
+    resourcePath: "resources"
+    name: "SR2 Emergency Stop"
+    msgSource: "cob_msgs.msg"
+    msgType: "EmergencyStopState"
+    subscribeTo: "/emergency_stop_state"
+    states:
+      - on_start:
+        iconName: *wsName/*resourcePath/images/"emergency_stop_on.svg"
+        msg: "Emergency stop is on! Press the button again and reset using the key to return to operational mode"
+      - off_stop:
+	iconName: *workspace/*resourcePath/images/"emergency_stop_off.svg"
+        msg: "Emergency stop is off!"

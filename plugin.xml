@@ -1,0 +1,12 @@
+<library path="src">
+  <class name="SR2Dashboard" type="sr2_dashboard.sr2_dashboard.SR2Dashboard" base_class_type="rqt_gui_py::Plugin">
+    <description>
+      SR2Dashboard is used for controlling and viewing information about the SR2 robot platform
+    </description>
+    <qtgui>
+      <label>SR2 Dashboard</label>
+      <icon type="theme">task-past-due</icon>
+      <statustip>A dashboard that displays and interacts with low and high level SR2 states</statustip>
+    </qtgui>
+  </class>
+</library>

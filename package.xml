@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+  <name>sr2_dashboard</name>
+  <version>0.0.0</version>
+  <description>sr2_dashboard package</description>
+
+  <maintainer email="redbaronqueen@gmail.com">Aleksandar Vladimirov Atanasov</maintainer>
+  <author email="redbaronqueen@gmail.com">Aleksandar Vladimirov Atanasov</author>
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>cob_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>roslib</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>rqt_gui_cpp</build_depend>
+  <build_depend>rqt_robot_dashboard</build_depend>
+  <run_depend>cob_msgs</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>roslib</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>rqt_gui_cpp</run_depend>
+  <run_depend>rqt_robot_dashboard</run_depend>
+
+  <export>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>
