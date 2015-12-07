@@ -1,0 +1,110 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Dec  7 14:39:07 2015
+
+@author: atanasov2
+
+WORK IN PROGRESS
+"""
+
+"""
+Note: names have to be unique because they are used as building components for the PID files
+Note: resources for a button have to be located inside a resource directory inside the ROS package that the button uses
+
+---------------------------
+BUTTON:
+A button can be part of a noview (menubar) or a view (menubar+alternative bigger view). It has two states:
+ - default (=unpressed) - if no previous state of the UI was stored this value always represents the starting state of a button
+ - pressed - whenever a button is pressed and is in default state its state changes to pressed
+Based on the two states we also have two possible transitions:
+ - from default to pressed state - executes the specified command in the YAML file (rosrun, roslaunch or rossrvcall)
+ - from pressed to default state - sends SIG_TERM to the specific process
+A button can execute one of the following three commands whenever the first transition occurs:
+ - rosrun - runs "rosrun ros_pkg_name ros_node_name" where ros_pkg_name is specified by the parameter ros_pkg and ros_node_name - by ros_node
+ - roslaunch - runs "roslaunch ros_pkg_name ros_launch_file1 ros_launch_file2 ... " where ros_pkg_name is specified by the parameter ros_pkg and ros_node_name - by ros_node; it also supports multiple launch files as long as these are from the same package
+ - rossrvcall - runs "rosservice call srv_name" where srv_name is the name of the service. Note that only Trigger-type services (sending a boolean) are supported
+Only a single of the above can have a value different than "" at the time when the UI is loaded. If more than one is populated with, the first one top to bottom is take.
+For example:
+rosrun: "my_node"
+roslaunch: ""
+rossrvcall: ""
+
+and
+
+rosrun: "my_node"
+roslaunch: "my_launch_file"
+rossrvcall: ""
+
+will both result in "rosrun ros_pkg_name my_node". This restriction is necessary since we want a button to execute a specific task/set of tasks and not change unless the config file is changes
+
+- button:
+  # Caption is the lable of the specified button
+  name: "turnonoff"
+  caption:
+  - default: "Turn on LEDs" # part of the default state which the button takes when the GUI is loaded
+  - pressed: "Turn off LEDs" # whenever the button is not in its default state it changes its caption to this one here
+  icons:
+  # Icons are optional that is the two entities below can be left empty: ""
+  - default: ""
+  - pressed: ""
+  rospkg: "lt"
+  # A single entry from the three entries below has to be populated. If multiple are populates, the YAML GUI loader takes the first non-empty entry
+  rosrun: ""
+  roslaunch: ""  # Support for multiple launch files
+  # Support for Trigger-type services
+  # Example: "/leds_rectangle/turn_onoff" -> terminal-wise this will simply invoke the "rosservice call /leds_rectangle/turn_onoff" command
+  rossrvcall: ""
+
+---------------------------
+MODULE:
+A module can be to types based on the type parameter:
+  - view - contains a set of buttons and automatically generates a menu entry (not to be confused with the buttons from the noview module); the value of name is displayed
+  - noview - containing a set of buttons without a view attached to them; such modules are only used as part of the menu module
+The order which the buttons are listed in for their parent module in the YAML file is used to place them in the UI (starting top/right)
+
+- module:
+  name: "noview1"
+  type: "noview"
+  buttons:
+  - button:
+    ...
+  - button:
+    ...
+
+MODULE [BUTTON_1 BUTTON_2 ... BUTTON_N]
+
+---------------------------
+MENU:
+A menu contains a set of view and noview modules.
+
+MENU [MODULE_1 MODULE_2 ... MODULE_N]
+
+---------------------------
+DASHBOARD:
+A dashboard has a single area for displaying opened views as well as four areas where menu modules can be places.
+"""
+
+dashboard:
+  menus:
+  - menu:
+    modules:
+    - module:
+      name: ""
+      type: "noview"
+      buttons:
+      - button:
+        caption: "Menu Button 1"
+        icons:
+        - default: ""
+        - pressed: ""
+        rospkg: "lt"
+    - module:
+      name: "Misc commands"
+      type: "view"
+      buttons:
+      - button:
+        caption: "Menu Button 1"
+        icons:
+        - default: ""
+        - pressed: ""
+        rospkg: "lt"
