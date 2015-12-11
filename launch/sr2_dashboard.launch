@@ -1,3 +1,6 @@
 <launch>
-  <node name="sr2_dashobard" pkg="sr2_dashboard" type="sr2_dashboard" />
+  <node name="sr2_dashobard" pkg="sr2_dashboard" type="sr2_dashboard" output="screen">
+    <rosparam command="delete" param="dashboard"/>
+    <rosparam command="load" file="$(find sr2_dashboard)/resources/config/config_new_format.yaml"/>
+  </node>
 </launch>

@@ -20,6 +20,8 @@ modules:
     #  icon: ""
       # ...
 
+  - module:
+    name: "roscall
 
   - module:
     name: "Services"
@@ -41,6 +43,12 @@ modules:
       rospkg: "cob_bringup"
       roslaunch_files:
         - "robot.launch"
+    - button:
+      caption: "SR2 2D Global Navigation"
+      icon: ""
+      rospkg: "cob_navigation_global"
+      roslaunch_files:
+        - "2dnav_ros_eband.launch"
 
 # Resources management
 # Add the ability to specify resource paths with scoping!!!
