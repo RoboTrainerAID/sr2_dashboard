@@ -17,7 +17,7 @@ import os
 from os import remove, kill, mkdir
 from os.path import isfile, exists
 from signal import SIGINT
-#from exceptions import IOError, KeyError, TypeError
+from exceptions import IOError, KeyError, TypeError
 from yaml import YAMLError
 
 # COB messages
@@ -43,6 +43,7 @@ from python_qt_binding.QtCore import Qt
 # TODO:
 # - Add the yaml_gui.py properly to the ROS infrastructure. Right now there is an issue with the paths,
 #   since they need to be resolved by rospkg.RosPack, which is not included in the yaml_gui.py
+# - Change the YAML configuration file. Do not use KEY "button" but simply add a list where each element starts with a string (the name of the button) and after that all button's properties
 
 #import yaml_gui as yg
 
@@ -366,35 +367,31 @@ class SR2DashboardItemFactory:
                 
                 def onResize(self, event):
                     ''' Called whenever a resize event is triggered on the widget. It resizes the icon (if present) inside the button'''
-                    if self.icon != None:
+                    if self.icons != None:
                         self.qbtn.setIconSize(QSize(self.qbtn.width()/2, self.qbtn.height()/2))
                     
                     #if self.caption != None:
-                    #  font = self.font()
+                    #  font = self.font()yamlButtonList[ybutton]
                     #  font.setPixelSize(self.qbtn.height()/4)
                     #  self.setFont(font)
-                
-                def __init__(self, caption, rospkg, roscommand, target, icon=None):
+                                
+                def __init__(self, pkg, cmd, args, captions, icons=None):
                     super(SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget, self).__init__()
                     QWidget.__init__(self)
                     
                     print("Generating button")
-                    self.caption = caption
-                    self.icon = icon
-                    self.command = roscommand
-                    self.args = [rospkg]
-                    if roscommand == 'roslaunch':
-                        for launchFile in target:
-                            self.args.append(launchFile)
-                    else:
-                        self.args.append(target)
-                        
+                    self.captions = captions
+                    self.icons = icons
+                    self.command = cmd
+                    self.args = args
                     self.status = False
+                    self.pkg = pkg
                     self.pid = 0
+                    
                     # A PID file is used for storage of the detached process
                     # In case the UI crashes or is closed intentionally this
                     # file is used to restore the UI's state and reconnect it
-                    # to the detached process so that it can be controlled
+                    # to the detached processes so that these can be controlled
                     # The format of a PID file for now is as follows:
                     # rosrun:       rospkg + '_' + 'rosrun' + '_' + 'nodeName' + '.pid'
                     # roslaunch:    rospkg + '_' + 'roslaunch' + '_' + 'launchFile1' + '_' + 'launchFile2' + '_' + ... + '.pid'
@@ -403,29 +400,32 @@ class SR2DashboardItemFactory:
                         print("Creating hidden folder '.pid' for storing PID files")
                         mkdir('.pid')
                     
-                    self.pidFilePath = '.pid/' + rospkg + '_' + roscommand
-                    if roscommand == 'roslaunch':
-                        for launchFile in target:
-                            self.pidFilePath = self.pidFilePath + '_' + launchFile
-                    elif roscommand == 'rosrun':
-                            self.pidFilePath = self.pidFilePath + '_' + target
-                            
-                    self.pidFilePath = self.pidFilePath + '.pid'
-                    print("PID file: '" + self.pidFilePath + "'")
+                    # Only in case we have multiple launch files (determined by the spaces between the names of the files contained in the self.args string) we remove the spaces
+#                    self.pidFilePath =  '.pid/'
+#                                        + self.pkg
+#                                        + '_'
+#                                        + self.command
+#                                        + '_'
+#                                        + (self.args if ' ' in self.args == True else "".join(self.args.split()))
+                    self.pidFilePath =  '.pid/%s_%s_%s.pid' % (self.pkg, self.command, self.args if ' ' in self.args == True else "".join(self.args.split()))
+                    print('PID file: "' + self.pidFilePath + '"')
                     
                     if isfile(self.pidFilePath):
                         with open(self.pidFilePath) as pidF:
                             self.pid = int(pidF.readline())
-                            print("Found '" + self.pidFilePath + "'. Restoring connection to detached process with PID" + str(self.pid))
+                            print('Found "' + self.pidFilePath + '". Restoring connection to detached process with PID' + str(self.pid))
                             self.status = True
                     else:
-                        print("Warning: No '" + self.pidFilePath + "' detected. If you have started the detached process, closed the UI and deleted this file, the application will be unable to restore its state and the external process will be orphaned!")
+                        print('Warning: No "' + self.pidFilePath + '" detected. If you have started the detached process, closed the UI and deleted this file, the application will be unable to restore its state and the external process will be orphaned!')
                     
+                    # TODO Rewrite where necessary initUI and toggleProcess in order to included the three possible states for a button: default(=not pressed), pressed and warning (icon and caption for each of those states is provided by the YAML config file!)
                     self.initUi()
         
                 def initUi(self):
-                    ''' Creates a simply UI for the widget with a single button in it
-                        For the functionality behind the button see toggleProcess()'''
+                    '''
+                    Creates a simply UI for the widget with a single button in it
+                    For the functionality behind the button see toggleProcess()
+                    '''
                     self.hbox = QHBoxLayout()
         #            if len(self.caption) != 0:
         #                self.qbtn = QPushButton('Start \"' + self.caption + '\"', self)
@@ -439,36 +439,26 @@ class SR2DashboardItemFactory:
                     # Result below looks bad but not as bad as using the default QPushbutton where text is aligned to the right
                     # of the icon.  Resizing text accordingly is also hard
                     # These two things are even more difficult to do when working with a grid layout!
-                    if len(self.caption) != 0 and self.icon != None:
-                        self.qbtn = QToolButton(self)
-                        self.qbtn.setText('Start \"' + self.caption + '\"')
-                        self.qbtn.setIcon(QIcon(self.icon))
-                        self.qbtn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
-                        #self.qbtn.setStyleSheet('''
-                        #QToolButton {
-                        #    background: url(flaticon_Freepik_delete30.svg) top center no-repeat;
-                        #    padding-top: 32px;
-                        #}
-                        #''')
-                    elif len(self.caption) == 0 and self.icon != None:
-                        self.qbtn = QToolButton(self)
-                        self.qbtn.setIcon(QIcon(self.icon))
-                        self.qbtn.setToolButtonStyle(Qt.ToolButtonIconOnly)
-                    elif len(self.caption) != 0 and self.icon == None:
-                        self.qbtn = QToolButton(self)
-                        self.qbtn.setText('Start \"' + self.caption + '\"')
-                        self.qbtn.setToolButtonStyle(Qt.ToolButtonTextOnly)
-                    else:
-                        self.qbtn = QToolButton(self)
+                    self.qbtn = QToolButton(self)
+                    self.qbtn.setText(self.captions[0])
+                    self.qbtn.setIcon(QIcon(self.icons[0]))
+                    self.qbtn.setToolButtonStyle(Qt.ToolButtonTextUnderIcon)
+#                    self.qbtn.setStyleSheet('''
+#                    QToolButton {
+#                        background: url(flaticon_Freepik_delete30.svg) top center no-repeat;
+#                        padding-top: 32px;
+#                    }
+#                    ''')
+#                
                         
                     self.qbtn.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
                     self.qbtn.setCheckable(True)
                     self.qbtn.resizeEvent = self.onResize
                     
                     if self.status:
-                    	self.qbtn.setChecked(True)
-                        if len(self.caption) != 0:
-                             self.qbtn.setText('Stop \"' + self.caption + '\"')
+                        self.qbtn.setChecked(True)
+                        self.qbtn.setText(self.captions[1])
+                        self.qbtn.setIcon(QIcon(self.icons[1]))
                      
                     self.qbtn.clicked.connect(self.toggleProcess)
                     self.qbtn.resize(self.qbtn.sizeHint())
@@ -478,8 +468,7 @@ class SR2DashboardItemFactory:
                     self.show()
             
                 def broadcastedStop(self):
-                    import rospy
-                    rospy.loginfo("STOP SIGNAL")
+                    rospy.loginfo("Stop signal")
                     self.toggleProcess(False)
                     
                 def toggleProcess(self, val):
@@ -488,23 +477,27 @@ class SR2DashboardItemFactory:
                         in the recovery mechanism of the UI in a case of an UI crash or deliberate termination'''
                     # If button pressed
                     if val:
-                        print("Starting process")
+                        print('SR2: Starting process')
                 		# Note: when roslaunch is terminated all processes spawned by it are also terminated
                 		# thus even if roscore has been started by the roslaunch process it will too be stopped :)
         #        		self.status, self.pid = QProcess.startDetached('roslaunch', ['lt', 'talker.launch'], '.') #(self.command, self.args, '.')
-                        self.status, self.pid = QProcess.startDetached(self.command, self.args, '.') #(self.command, self.args, '.')
+                        self.status, self.pid = QProcess.startDetached(self.command, self.args, '.')
                         if self.status:
-                            print("PID:" + str(self.pid))
+                            # Change to pressed state
+                            print('SR2: PID:' + str(self.pid))
                             pidFile = open(self.pidFilePath, 'w')
                             pidFile.write(str(self.pid))
                             pidFile.close()
-                            if len(self.caption) != 0:
-                                self.qbtn.setText('Stop \"' + self.caption + '\"')			
+                            self.qbtn.setText(self.captions[1])			
+                            self.qbtn.setIcon(QIcon(self.icons[1]))
                         else:
                             self.qbtn.setChecked(False)
-                            print("Error: Failed to create process!")
+                            # Change to warning state
+                            self.qbtn.setText(self.captions[2])			
+                            self.qbtn.setIcon(QIcon(self.icons[2]))
+                            rospy.logerr('SR2: Failed to start process')
                     else:
-                        print("Stopping process")
+                        print('SR2: Stopping process')
                         if self.status:
                             # kill takes a very short amount of time hence we can call it from inside the main thread without freezing the UI
                             self.success = None
@@ -526,7 +519,7 @@ class SR2DashboardItemFactory:
                             if SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget.check_pid(self.pid):
                                 self.success = kill(self.pid, SIGINT)
                             else:
-                                print("Error: No process with PID " + str(self.pid) + " detected")
+                                rospy.logerr('SR2: No process with PID ' + str(self.pid) + ' detected')
                                 if isfile(self.pidFilePath):
                                     remove(self.pidFilePath)
                 			
@@ -537,35 +530,102 @@ class SR2DashboardItemFactory:
                             # and launch files to give proper names
                             # == 0 : for subprocess.call() return value | == None : for os.kill() return value (None -> kill was successful)
                             if self.success == 0 or self.success == None:
-                                print("Process stopped!")
+                                rospy.loginfo("SR2: Process stopped!")
                                 self.status = False
                                 self.pid = 0
                                 if isfile(self.pidFilePath):
                                     remove(self.pidFilePath)
-                                if len(self.caption) != 0:
-                                    self.qbtn.setText('Start \"' + self.caption + '\"')
+                                self.qbtn.setText(self.captions[0])			
+                                self.qbtn.setIcon(QIcon(self.icons[0]))
                             else:
-                                print("Error: Failed to stop process!")
                                 self.qbtn.setChecked(True)
+                                self.qbtn.setText(self.captions[2])			
+                                self.qbtn.setIcon(QIcon(self.icons[2]))
+                                rospy.logerr('SR2: Failed to stop process')                                
             
                 @staticmethod
-                def createButtonWidget(buttonConfig):
-                    ''' Creates a QWidget with a button inside that is used to start/stop a given process
-                        A button configuration is a dictionary with following keys:
-                            - caption: the string that will be used to label the button
-                            - icon (optional): a valid path to an image file (SVG, PNG etc. - all supported format by Qt)
-                            - rospkg:  a valid ROS package
-                            - command:    the type of command for 'target'; can be 'roslaunch' or 'rosrun'
-                            - target:  the target to be executed:
-                                - for a 'roslaunch' command: a list of valid ROS launch files within the selected 'rospkg'
-                                  ['file1.launch', 'file2.launch', ...]
-                                - for a 'rosrun' command: name of a valid ROS node
-                            - action: reference to a function based on rospkg, command and target; it is the functionality that the
-                                      created button will offer once inserted in the GUI
-                    '''
-                    assert buttonConfig != None, "Empty button configuration"
+                def createButtonWidget(yamlButtonConfig):
+                    """
+                    Creates a QWidget with a button inside that is used to start/stop a given process
+                    A button configuration is a dictionary with following keys:
+                    - caption: the string that will be used to label the button
+                    - icon (optional): a valid path to an image file (SVG, PNG etc. - all supported format by Qt)
+                    - rospkg:  a valid ROS package
+                    - command:    the type of command for 'target'; can be 'roslaunch' or 'rosrun'
+                    - target:  the target to be executed:
+                        - for a 'roslaunch' command: a list of valid ROS launch files within the selected 'rospkg'
+                          ['file1.launch', 'file2.launch', ...]
+                        - for a 'rosrun' command: name of a valid ROS node
+                    - action: reference to a function based on rospkg, command and target; it is the functionality that the
+                              created button will offer once inserted in the GUI
+                    """
                     
-                    return SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget(buttonConfig['caption'], buttonConfig['rospkg'], buttonConfig['roscommand'], buttonConfig['target'], buttonConfig['icon'])
+                    print('SR2: parsing button configuration', yamlButtonConfig)
+                    assert yamlButtonConfig != None, "Empty button configuration"
+                    
+                    pkg = ''
+                    cmd = ''
+                    args = ''
+                    # Try each of the possible configurations: node, launch and service
+                    # TODO Check if launch files etc exist or always launch the chosen command and let it fail if these are not present (let ROS handle the search for the files)
+                    try:
+                        pkg = yamlButtonConfig['package']
+                        rospy.loginfo('Using package %s' % pkg)
+                        try:
+                            args = yamlButtonConfig['node']
+                            rospy.loginfo('Nodes detected. Will use "rosrun"')
+                            cmd = 'rosrun'
+                            
+                        except KeyError:
+                            try:
+                                _args = yamlButtonConfig['launch']
+                                rospy.loginfo('Launch file(s) detected. Will use "roslaunch"')
+                                cmd = 'roslaunch'
+                                
+                                if isinstance(_args, list):
+                                    for i in range(0, len(_args)):
+                                        args = args + ' ' + _args[i]
+                                    args = args.lstrip(' ')
+                                    rospy.loginfo('Multiple launch files detected: "%s"' % args)
+                                else:
+                                    args = _args
+                                    rospy.loginfo('Single launch file detected: "%s"' % args)
+                                
+                            except KeyError:
+                                try:
+                                    args = yamlButtonConfig['serivce']
+                                    rospy.loginfo('Service deteceted. Will use "rosservice call"')
+                                    cmd = 'rosservice call'
+
+                                except KeyError as exc:
+                                    rospy.logerror('Button does not contain data that can be executed by the supported ROS tools. Add node, launch or service to the button"s description')
+                                    raise exc   
+                                    
+                        captions = []
+                        captions.append(yamlButtonConfig['captions']['default'])
+                        captions.append(yamlButtonConfig['captions']['pressed'])
+                        captions.append(yamlButtonConfig['captions']['warning'])
+                        
+                        #icon_paths = (icon_paths if icon_paths else []) + [['sr2_dashboard', 'resources/images']]
+                        icons = []
+#                        for path in icon_paths:
+#                            paths.append(os.path.join(rp.get_path(path[0]), path[1]))
+#                        _icon_helper = IconHelper(paths, name)
+#                        converted_icons = self._icon_helper.set_icon_lists(icons)
+#                        _icons = converted_icons[0]
+                        # TODO Use the IconHelper to populate the icons list using the names of the 
+                        icons.append(yamlButtonConfig['icons']['default'])
+                        icons.append(yamlButtonConfig['icons']['pressed'])
+                        icons.append(yamlButtonConfig['icons']['warning'])
+                            
+                    except KeyError as exc:
+                        rospy.loginfo('SR2: error while loading YAML file.')
+                        rospy.loginfo('SR2: full message: \n"%s"' % exc)
+                        return None
+
+                    
+                    #return SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget(yamlButtonConfig['caption'], yamlButtonConfig['rospkg'], yamlButtonConfig['roscommand'], yamlButtonConfig['target'], yamlButtonConfig['icon'])
+                    return SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget(pkg, cmd, args, captions, icons)
                     
         
         class SR2GridGenerator:
@@ -643,8 +703,9 @@ class SR2DashboardItemFactory:
             for ybutton in range(0, len(yamlButtonList)):
                 # Use createButtonWidget(...) (from yaml_gui.py) to generate each button
                 # and then append it to the the list with buttons
-                rospy.loginfo('SR2: Parsing button: %s' % yamlButtonList[ybutton])
-                button = None
+                
+                #rospy.loginfo('SR2: Parsing button: %s' % yamlButtonList[ybutton])
+                button = SR2DashboardItemFactory.SR2MenuView.SR2ButtonWidgetFactory.ButtonWidget.createButtonWidget(yamlButtonList[ybutton])
                 self.buttons.append(button)
                 pass
             
@@ -686,7 +747,7 @@ class SR2DashboardItemFactory:
                 if self.withView:
                     self.buttons = yamlSR2MenuEntry['menu_entry']['buttons']
             except YAMLError:
-                rospy.logwarn('SR2: detected menu entry with view which does NOT contain any buttons. Repsective view will be empty!')
+                rospy.logwarn('SR2: detected menu entry with view which does NOT contain any buttons. An empty view will be created instead')
                 return None  
 
             if not override_icons:
@@ -833,7 +894,7 @@ class SR2Dashboard(Dashboard):
           return
 
       # Populate the self.widgets list
-      self.generate_widgets()
+      self._generate_widgets()
       
 #      self.menu_entry_test_1 = SR2DashboardItemFactory.createDashboardItem(context, '', 'Menu Entry 1') #TestWidgetSR2MenuEntry(self.context)
 #      self.menu_entry_test_2 = SR2DashboardItemFactory.createDashboardItem(context, '', 'Menu Entry 2')
@@ -849,7 +910,7 @@ class SR2Dashboard(Dashboard):
     #self._estopSub = rospy.Subscriber("/emergency_stop_state", EmergencyStopState, self.update_emergency_stop_state_callback)
 #    self._sr2layout = SR2LayoutCreator('config1.yaml', 'Launches')
 
-  def generate_widgets(self):
+  def _generate_widgets(self):
       try:
           # Iterate through all menus
           for menuIdx in range(0,len(self._yMenus)):
