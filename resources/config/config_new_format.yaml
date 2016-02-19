@@ -1,23 +1,15 @@
 dashboard:
-  override_icons: True # Default icons will be used "$(find sr2_dashboard)/resources/images" otherwise custom files will be used in the same path as the default once but in the specified sub-directories and files
   menus:
-    # All menus are part of the toolbar. Each menu contains multiple modules (menu entry + menu view) and is separated from the others by a separator 
+    # All menus are part of the toolbar. Each menu contains one or multiple modules (menu entry + menu view) and is separated from the others by a separator "|"
     # menu 1
     - modules:
+        # A module is represented by its menu_entry which can optionally (if type=="view") open a view
         # module 1
         - name: "Menu 1 Module 1"
           type: "noview"
 
           # menu entry 1 in menu 1
           menu_entry:
-            icons:
-              # Icons are stored inside "$(find sr2_dashboard)/resources/images"
-              default: "status/status_normal.svg"
-              pressed: "status/status_normal_pressed.svg"
-              warning: "status/status_warning.svg"
-              #error: "status/status_error.svg # WTH?! When I add error rosparam seems to be unable to parse it
-              # If type is 'noview' the menu entry will also act as a command trigger!
-              # If type is 'view' the menu entry will not contain any of the nodes below:
             package: "lt"
             # node | launch | service
             # node -> will be executed using 'rosrun'
@@ -36,37 +28,26 @@ dashboard:
 
           # menu entry 2 in menu 1
           menu_entry:
-            icons:
-              default: "status/status_normal.svg"
-              pressed: "status/status_normal_pressed.svg"
-              warning: "status/status_warning.svg"
-              
             # Buttons for view toggled by menu entry 2 in menu 1
             buttons:
               # button 1
               - captions:
-                  default: "Press me 1"
-                  pressed: "Unpress me 1"
-                  warning: "Wooops..."
+                  inactive: "Press me 1"
+                  running: "Unpress me 1"
+                  error: "Wooops... 2"
                 icons:
-                  default: "status/status_normal.svg"
-                  pressed: "status/status_normal_pressed.svg"
-                  warning: "status/status_warning.svg"
+                  inactive: "status/status_inactive.svg"
+                  running: "status/status_running.svg"
+                  error: "status/status_error.svg"
                 package: "cob_bringup"
                 launch: "robot" # Fall back to support for a single launch file (easier to maintain when it comes to the PID files)
               # button 1
               - captions:
-                  default: "Press me 2"
-                  pressed: "Unpress me 2"
-                  warning: "Wooops..."
-                icons:
-                  default: "status/status_normal.svg"
-                  pressed: "status/status_normal_pressed.svg"
-                  warning: "status/status_warning.svg"
+                  inactive: "Press me 2"
+                  running: "Unpress me 2"
+                  error: "Wooops... 2"
                 package: "lt"
-                launch:
-                  - "talker"
-                  - "listener"
+                launch: "talker"
 
     # menu 2
     - modules:
@@ -76,14 +57,8 @@ dashboard:
 
           # menu entry 1 in menu 1
           menu_entry:
-            icons:
-              # Icons are stored inside "$(find sr2_dashboard)/resources/images"
-              default: "status/status_normal.svg"
-              pressed: "status/status_normal_pressed.svg"
-              warning: "status/status_warning.svg"
-              #error: "status/status_error.svg # WTH?! When I add error rosparam seems to be unable to parse it
-              # If type is 'noview' the menu entry will also act as a command trigger!
-              # If type is 'view' the menu entry will not contain any of the nodes below:
+            # If type is 'noview' the menu entry will also act as a command trigger!
+            # If type is 'view' the menu entry will not contain any of the nodes below:
             package: "lt"
             # node | launch | service
             # node -> will be executed using 'rosrun'
@@ -96,93 +71,11 @@ dashboard:
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
 
-#people:
-#  - name: Martin
-#    job: Developer
-#    skill: Elite
-#  - name: Bob
-#    job: Intern
-#    skill: Average
-
-
-
-
-
 
 ###############################################################################################################################################
 ############################################################## OLD DOCUMENTATION ##############################################################
 ###############################################################################################################################################
-#Note: names have to be unique because they are used as building components for the PID files
+#Note: names have to be unique because they are used as building components for the PID files! Also the dashboard requires unique names
 #Note: resources for a button have to be located inside a resource directory inside the ROS package that the button uses
-#
-#---------------------------
-#BUTTON:
-#A button can be part of a noview (menubar) or a view (menubar+alternative bigger view). It has two states:
-# - default (=unpressed) - if no previous state of the UI was stored this value always represents the starting state of a button
-# - pressed - whenever a button is pressed and is in default state its state changes to pressed
-#Based on the two states we also have two possible transitions:
-# - from default to pressed state - executes the specified command in the YAML file (rosrun, roslaunch or rossrvcall)
-# - from pressed to default state - sends SIG_TERM to the specific process
-#A button can execute one of the following three commands whenever the first transition occurs:
-# - rosrun - runs "rosrun ros_pkg_name ros_node_name" where ros_pkg_name is specified by the parameter ros_pkg and ros_node_name - by ros_node
-# - roslaunch - runs "roslaunch ros_pkg_name ros_launch_file1 ros_launch_file2 ... " where ros_pkg_name is specified by the parameter ros_pkg and ros_node_name - by ros_node; it also supports multiple launch files as long as these are from the same package
-# - rossrvcall - runs "rosservice call srv_name" where srv_name is the name of the service. Note that only Trigger-type services (sending a boolean) are supported
-#Only a single of the above can have a value different than "" at the time when the UI is loaded. If more than one is populated with, the first one top to bottom is take.
-#For example:
-#rosrun: "my_node"
-#roslaunch: ""
-#rossrvcall: ""
-#
-#and
-#
-#rosrun: "my_node"
-#roslaunch: "my_launch_file"
-#rossrvcall: ""
-#
-#will both result in "rosrun ros_pkg_name my_node". This restriction is necessary since we want a button to execute a specific task/set of tasks and not change unless the config file is changes
-#
-#- button:
-#  # Caption is the lable of the specified button
-#  name: "turnonoff"
-#  caption:
-#  - default: "Turn on LEDs" # part of the default state which the button takes when the GUI is loaded
-#  - pressed: "Turn off LEDs" # whenever the button is not in its default state it changes its caption to this one here
-#  icons:
-#  # Icons are optional that is the two entities below can be left empty: ""
-#  - default: ""
-#  - pressed: ""
-#  rospkg: "lt"
-#  # A single entry from the three entries below has to be populated. If multiple are populates, the YAML GUI loader takes the first non-empty entry
-#  rosrun: ""
-#  roslaunch: ""  # Support for multiple launch files
-#  # Support for Trigger-type services
-#  # Example: "/leds_rectangle/turn_onoff" -> terminal-wise this will simply invoke the "rosservice call /leds_rectangle/turn_onoff" command
-#  rossrvcall: ""
-#
-#---------------------------
-#MODULE:
-#A module can be to types based on the type parameter:
-#  - view - contains a set of buttons and automatically generates a menu entry (not to be confused with the buttons from the noview module); the value of name is displayed
-#  - noview - containing a set of buttons without a view attached to them; such modules are only used as part of the menu module
-#The order which the buttons are listed in for their parent module in the YAML file is used to place them in the UI (starting top/right)
-#
-#- module:
-#  name: "noview1"
-#  type: "noview"
-#  buttons:
-#  - button:
-#    ...
-#  - button:
-#    ...
-#
-#MODULE [BUTTON_1 BUTTON_2 ... BUTTON_N]
-#
-#---------------------------
-#MENU:
-#A menu contains a set of view and noview modules.
-#
-#MENU [MODULE_1 MODULE_2 ... MODULE_N]
-#
-#---------------------------
-#DASHBOARD:
-#A dashboard has a single area for displaying opened views as well as four areas where menu modules can be places.
+
+# WRITE DOCUMENTATION

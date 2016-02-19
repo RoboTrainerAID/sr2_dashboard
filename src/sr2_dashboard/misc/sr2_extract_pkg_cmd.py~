@@ -1,0 +1,7 @@
+class SR2PkgCmdExtractor:
+  '''
+  Returns the dimensions of a grid layout for the distribution of elements of a given list
+  '''
+  @staticmethod
+  def getPkgAndCmd(yamlEntry):
+    pass

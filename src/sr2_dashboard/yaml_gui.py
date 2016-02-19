@@ -348,7 +348,7 @@ class SR2ButtonWidgetFactory:
         		# Note: when roslaunch is terminated all processes spawned by it are also terminated
         		# thus even if roscore has been started by the roslaunch process it will too be stopped :)
 #        		self.status, self.pid = QProcess.startDetached('roslaunch', ['lt', 'talker.launch'], '.') #(self.command, self.args, '.')
-                self.status, self.pid = QProcess.startDetached(self.command, self.args, '.') #(self.command, self.args, '.')
+                self.status, self.pid = QProcess.startDetached(self.command, self.pkg + self.args, '.') #(self.command, self.args, '.')
                 if self.status:
                     print("PID:" + str(self.pid))
                     pidFile = open(self.pidFilePath, 'w')
