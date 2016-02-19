@@ -11,8 +11,7 @@ from rospkg import RosPack
 # PyQt, RQt related
 from python_qt_binding.QtCore import QObject, pyqtSignal, pyqtSlot, QProcess
 
-from enum import Enum
-class ProcStatus(Enum):
+class ProcStatus():
   '''
   Represents the status of the external ROS process
   '''
@@ -58,7 +57,7 @@ class SR2Worker(QObject):
     if not command or not pkg or not args: return
 
     self.bash_status = False
-    self.proc_status = ProcStatus.INACTIVE.value
+    self.proc_status = ProcStatus.INACTIVE
     # Use None as default value for the PID otherwise you are in for a BIG surprise if you run kill -SIGINT with the incorrect PID)
     # Invoking kill with None as the PID argument results in exception which is much easier and better to handle
     self.bash_pid = None # Stores PID of bash process
@@ -236,7 +235,7 @@ class SR2Worker(QObject):
         rmdir(self.dir_name)
       except:
         if self.bash_pid or self.proc_pid:
-          self.proc_status = ProcStatus.FAILED_STOP.value
+          self.proc_status = ProcStatus.FAILED_STOP
         self.statusSignal.emit(self.proc_status)
 
   def getExitStatus(self):
@@ -279,7 +278,7 @@ class SR2Worker(QObject):
     # If we have restored the UI or triggered the start slot again while the PID of the bash process and external process are present we can skip the creation of the external processes
     if self.bash_pid and self.proc_pid:
       rospy.loginfo('SR2: Restoring state of UI component')
-      self.proc_status = ProcStatus.RUNNING.value
+      self.proc_status = ProcStatus.RUNNING
       self.statusSignal.emit(self.proc_status)
       return
 
@@ -297,9 +296,9 @@ class SR2Worker(QObject):
     # Check if process has started properly
     if self.bash_status and self.bash_pid:
       rospy.loginfo('SR2: ROS process successfully started')
-      self.proc_status = ProcStatus.RUNNING.value
+      self.proc_status = ProcStatus.RUNNING
       self.loadPid(self.proc_path, self.proc_pid)
-    else: self.proc_status = ProcStatus.FAILED_START.value
+    else: self.proc_status = ProcStatus.FAILED_START
 
     self.statusSignal.emit(self.proc_status)
 
@@ -310,7 +309,7 @@ class SR2Worker(QObject):
     # Check if both the bash script and the ROS process are running
     if not self.checkProcessRunning():
       rospy.logwarn('SR2: External process not running so there is nothing to stop')
-      self.proc_status = ProcStatus.INACTIVE.value
+      self.proc_status = ProcStatus.INACTIVE
       self.statusSignal.emit(self.proc_status)
       return
 
@@ -330,15 +329,15 @@ class SR2Worker(QObject):
     # Check if exit code of ROS process was okay or not
     if self.isFileEmpty(self.proc_path):
       rospy.logwarn('SR2: ROS process has stopped prematurely')
-      self.proc_status = ProcStatus.FAILED_STOP.value
+      self.proc_status = ProcStatus.FAILED_STOP
       return
 
     # Retrieve the exit status of the ROS process from the .proc file (second line)
     self.getExitStatus()
 
     # Based on the exit code of the ROS process emit a signal
-    if not self.exit_code: self.proc_status = ProcStatus.FINISHED.value
-    else: self.proc_status = ProcStatus.FAILED_STOP.value
+    if not self.exit_code: self.proc_status = ProcStatus.FINISHED
+    else: self.proc_status = ProcStatus.FAILED_STOP
     self.statusSignal.emit(self.proc_status)
     # Send SIGINT to bash script
     if self.bash_pid: kill(self.bash_pid, SIGINT)
@@ -359,8 +358,8 @@ class SR2Worker(QObject):
 
     # In case the ROS process has finished, is inactive or failed we don't change the status
     if self.checkProcessRunning():
-      self.proc_status = ProcStatus.RUNNING.value
+      self.proc_status = ProcStatus.RUNNING
 
-#    print('PROC_STATUS =', self.proc_status.value)
+#    print('PROC_STATUS =', self.proc_status)
     self.statusSignal.emit(self.proc_status)
 

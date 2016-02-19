@@ -14,7 +14,6 @@ from rqt_robot_dashboard.util import IconHelper
 #import sys
 import os
 from yaml import YAMLError
-from enum import Enum
 
 # COB messages
 #from cob_msgs.msg import ...
@@ -30,7 +29,7 @@ from sr2_view import SR2MenuEntryViewWidget as sr2mev
 from sr2_monitor_object import SR2Worker, ProcStatus
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor as sr2pce
 
-class IconType(Enum):
+class IconType():
   inactive = 0
   running = 1
   error = 2
@@ -95,7 +94,7 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
     self.view_widget = None
     self.name = name
     self.toggled = False
-    self.setIcon(self._icons[IconType.inactive.value])
+    self.setIcon(self._icons[IconType.inactive])
     self.clicked.connect(self.toggleDo)
     self.context = context
 
@@ -120,7 +119,7 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
           self.context.remove_widget(self.view_widget)
           self.close()
           self.toggled = False
-          self.setIcon(self._icons[IconType.inactive.value])
+          self.setIcon(self._icons[IconType.inactive])
         else:
           # If menu entry has a view, create it and display it
           rospy.loginfo('SR2: Showing SR2MenuView "%s View"', self.name)
@@ -128,7 +127,7 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
           self.context.add_widget(self.view_widget)
           rospy.loginfo('SR2: Added SR2MenuView "%s"', self.name)
           self.toggled = True
-          self.setIcon(self._icons[IconType.running.value])
+          self.setIcon(self._icons[IconType.running])
       except Exception as e:
         if not self.view_widget:
           rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
@@ -176,7 +175,7 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
     self.name = name
     self.toggled = False
-    self.setIcon(self._icons[IconType.inactive.value])
+    self.setIcon(self._icons[IconType.inactive])
     self.clicked.connect(self.toggleDo) # self.show
     self.context = context
 
@@ -242,12 +241,12 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
         rospy.loginfo('SR2: Shutting down external process')
         self.close()
         self.toggled = False
-        self.setIcon(self._icons[IconType.inactive.value])
+        self.setIcon(self._icons[IconType.inactive])
         self.stopSignal.emit()  # Tell worker to stop external ROS process
       else:
         rospy.loginfo('SR2: Launching external process')
         self.toggled = True
-        self.setIcon(self._icons[IconType.running.value])
+        self.setIcon(self._icons[IconType.running])
         self.startSignal.emit() # Tell worker to start external ROS process
     except Exception as e:
       if not self.view_widget:
@@ -263,6 +262,6 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
   @pyqtSlot(int)
   def status(self, status):
-    if status in [ProcStatus.INACTIVE.value, ProcStatus.FINISHED.value]: self.setIcon(self._icons[IconType.inactive.value])
-    elif status in [ProcStatus.FAILED_START.value, ProcStatus.FAILED_STOP.value]: self.setIcon(self._icons[IconType.error.value])
-    else: self.setIcon(self._icons[IconType.running.value])
+    if status in [ProcStatus.INACTIVE, ProcStatus.FINISHED]: self.setIcon(self._icons[IconType.inactive])
+    elif status in [ProcStatus.FAILED_START, ProcStatus.FAILED_STOP]: self.setIcon(self._icons[IconType.error])
+    else: self.setIcon(self._icons[IconType.running])

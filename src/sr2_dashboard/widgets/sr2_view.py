@@ -19,7 +19,6 @@ from os.path import isfile, exists
 from signal import SIGINT
 from exceptions import IOError, KeyError, TypeError
 from yaml import YAMLError
-from enum import Enum
 
 # COB messages
 #from cob_msgs.msg import ...
