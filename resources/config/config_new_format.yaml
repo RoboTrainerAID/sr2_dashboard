@@ -64,7 +64,7 @@ dashboard:
             # node -> will be executed using 'rosrun'
             # launch -> will be executed using 'roslaunch' (roslaunch allows multiple files to be launched through the same parent process)
             # service -> will be executed using 'rosservice call' (currently only Trigger services are supported; initial states is always set to False)
-            node: "talker.py"
+            node: "listener.py"
             # If type is 'noview' buttons-node will be skipped entirely
             # If type is 'view' buttons will be parsed and a widget will be created for each button which will then be added to a grid view
 

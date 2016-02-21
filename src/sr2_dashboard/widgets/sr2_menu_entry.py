@@ -179,8 +179,6 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     self.clicked.connect(self.toggleDo) # self.show
     self.context = context
 
-    self.setToolTip(self.name)
-
     # TODO Add SR2Worker to this menu entry along with all related to it
     # Parse command and arguments and pass these to the constructor of the worker
     #self.worker = SR2Worker(...)
@@ -197,13 +195,14 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     self.pkg, self.cmd, self.args = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])
 
     rospy.loginfo('SR2: Found "%s %s %s"' % (self.cmd, self.pkg, self.args))
+    self.setToolTip(self.name + ' : "' + self.cmd + ' ' + self.pkg + ' ' + str(self.args).strip('[]').replace(',',' ') + '"')
 
     # The package itself is considered as an argument so we attach it to args
     self.worker = SR2Worker(self.cmd, self.pkg, self.args)
 
     # Add timer, worker and thread
     self.timer = QTimer()
-    self.timer.setInterval(10)
+    self.timer.setInterval(1000)
     self.thread = QThread()
 
     # Delete worker and timer once thread has stopped

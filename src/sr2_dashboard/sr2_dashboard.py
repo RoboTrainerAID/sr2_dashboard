@@ -7,6 +7,7 @@ roslib.load_manifest('sr2_dashboard')
 import rospy
 # RQT Robot Dashboard
 from rqt_robot_dashboard.dashboard import Dashboard
+from rqt_robot_dashboard.widgets import MonitorDashWidget, ConsoleDashWidget
 # RQT Robot Dashboard widgets
 #from rqt_robot_dashboard.widgets import ...
 
@@ -180,12 +181,12 @@ class SR2Dashboard(Dashboard):
     self.widgets = []
 
     # Check if configuration is uploaded to the parameter server
-    if not rospy.has_param('/sr2_dashobard/dashboard/menus'):
-      rospy.logfatal('SR2: Unable to find "/sr2_dashobard/dashboard/menus" on parameter server. Please make sure that you have executed "rosparam load your_config.yaml" before launching the SR2 Dashboard')
+    if not rospy.has_param('/sr2_dashboard/dashboard/menus'):
+      rospy.logfatal('SR2: Unable to find "/sr2_dashboard/dashboard/menus" on parameter server. Please make sure that you have executed "rosparam load your_config.yaml" before launching the SR2 Dashboard')
       return
 
     # Retrieve all menus from YAML file
-    self._yMenus = rospy.get_param('/sr2_dashobard/dashboard/menus')
+    self._yMenus = rospy.get_param('/sr2_dashboard/dashboard/menus')
 
 
     if len(self._yMenus) > 0: rospy.loginfo('SR2: Found %d menus' % len(self._yMenus))
@@ -200,6 +201,11 @@ class SR2Dashboard(Dashboard):
     '''
     Populates the SR2Dashboard with widgets using the configuration stored inside the YAML file
     '''
+    # Add default widgets
+    # TODO Find a way to convert rqt_graph, rqt_tf_tree to QWidget
+    self.monitor = MonitorDashWidget(self.context)
+    self.console = ConsoleDashWidget(self.context, minimal=False)
+    self.widgets.append([self.monitor, self.console])
     try:
       # Iterate through all menus
       for menuIdx in range(0,len(self._yMenus)):

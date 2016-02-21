@@ -1,7 +1,6 @@
-# General
-from os import kill, mkdir, remove, rmdir, stat, error, path
+from os import kill, mkdir, remove, rmdir, stat, error, path, makedirs, umask, chmod
 from exceptions import IOError
-from os.path import exists
+from os.path import exists, isdir
 from shutil import rmtree
 from signal import SIGINT
 import errno
@@ -9,7 +8,7 @@ import errno
 import rospy
 from rospkg import RosPack
 # PyQt, RQt related
-from python_qt_binding.QtCore import QObject, pyqtSignal, pyqtSlot, QProcess
+from python_qt_binding.QtCore import QObject, pyqtSignal, pyqtSlot, QProcess, QThread
 
 class ProcStatus():
   '''
@@ -32,25 +31,6 @@ class SR2Worker(QObject):
 
   statusSignal = pyqtSignal(int)
 
-  @staticmethod
-  def checkPid(pid):
-    '''
-    Checks if a process with a given PID is running or not
-    '''
-    try:
-      kill(pid, 0)
-    except OSError as ose:
-      return ose.errno == errno.EPERM
-    except TypeError:
-      return False
-    else:
-        return True
-#    try:
-#      if pid: kill(pid, 0)
-#      return True
-#    except OSError:
-#      return False
-
   def __init__(self, command, pkg, args=None):
     super(SR2Worker, self).__init__()
 
@@ -66,7 +46,7 @@ class SR2Worker(QObject):
 
     # Setup files
     self.dir_name = '/tmp/' + command + pkg + args
-    self.dir_name = self.dir_name.strip() # Remove all spaces so that the bash script doesn't get confused
+    self.dir_name = self.dir_name.strip().replace('.','') # Remove all spaces and dots so that the bash script doesn't get confused
     self.bash_path = self.dir_name + '/.bash'
     self.proc_path = self.dir_name + '/.proc'
 
@@ -89,11 +69,27 @@ class SR2Worker(QObject):
 
   def checkRootDirExists(self):
     '''
-    Check is the process folder is present and creates it if not
+    Check if the process folder is present and create it if not
     '''
     if not exists(self.dir_name):
-      rospy.loginfo('SR2: Process directory doesn\'t exist and therefore will be created')
-      mkdir(self.dir_name)
+      rospy.loginfo('SR2: Process directory "%s" doesn\'t exist and therefore will be created', (self.dir_name+'/'))
+      try:
+        mkdir(self.dir_name)
+        rospy.loginfo('SR2: Process directory successfully created')
+      except OSError as e:
+        rospy.logerr('SR2: An error occured while creating process directory')
+#        if e.errno != errno.EEXIST:
+#          rospy.logerr('DIR EXISTS')
+#        elif e.errno != errno.EACCES:
+#          rospy.logerr('DIR ACCESS')
+#        else:
+#          rospy.logerr('EXCEPTION THROWN')
+#      except IOError:
+#        rospy.logerr('IO EXCEPTION RAISED')
+#      except Exception:
+#        rospy.logerr('SOME OTHER EXCEPTION RAISED')
+    else:
+      rospy.loginfo('SR2: Process directory "%s" already exists', (self.dir_name+'/'))
 
   def checkFileExists(self, _path):
     '''
@@ -106,8 +102,9 @@ class SR2Worker(QObject):
         open(_path, 'w').close()
         return False
       else: return True
-    except IOError as ioe:
+    except IOError:
       rospy.logerr('SR2: Unable to write PID file "%s". Maybe you don\'t have the permissions to write to the given path?', _path)
+      print(_path)
       return False
 
   def writePidToFile(self, _path, source):
@@ -122,57 +119,6 @@ class SR2Worker(QObject):
         with open(_path, 'w') as pidFile:
           pidFile.write(str(source))
 
-#  def checkBashProcFilesExist(self):
-#    '''
-#    Creates the .proc and .bash files if they don't exists. If they exist the information stored in them is loaded
-#    Note that the bash script that retrieves the exit code from the external process is the one that actually creates the files
-#    The creation here can only happen if a PID for either .bash or .proc files is available (>0) which happens if the UI is closed but the two processes are not shutdown
-#    Warning: call this function after running checkAndCreateBashProcRootDir() to ensure that process folder is present
-#    '''
-#    pass
-    # The default PID that the bash and external ROS process have is -1
-    # The bash script is the one that creates and writes the data (PID and exit code) to the .proc file, which is then loaded in self.pid_proc and self.exit_code
-    # In this case we return without doing nothing
-
-    # .bash
-#    try:
-#      if not path.isfile(self.bash_path):
-#        if self.bash_pid > 0:
-#          # Here we make sure that the .bash file is present during the execution of the application
-#          # It is useful only when the .bash file is deleted not by the application itself
-#          with open(self.bash_path, 'w') as pidBashFile:
-#            pidBashFile.write(str(self.bash_pid))
-#        else: open(self.bash_path, 'w').close() # Create empty file
-#      else:
-#        # If the .bash file is present then we try to load the information stored in it
-#        if not self.isFileEmpty(self.bash_path):
-#          # Load only in case the bash PID isn't already stored in the application
-#          if self.bash_pid < 0:
-#            with open(self.bash_path, 'r') as pidBashFile:
-#              # The single line inside .bash contains the PID of the running bash script
-#              self.bash_pid = int(pidBashFile.readline())
-#          else:
-#            # We also use checkBashProcFilesExist() to write the PID to the file
-#            with open(self.bash_path, 'w') as pidBashFile:
-#              pidBashFile.write(str(self.bash_pid))
-
-      # .proc
-#      if not path.isfile(self.proc_path):
-#        if self.proc_pid > 0:
-#          # This ensures that the .bash file is present during the execution of the application
-#          # It is useful only when the .bash file is deleted not by the application itself
-#          with open(self.proc_path, 'w') as pidProcFile:
-#            pidProcFile.write(str(self.proc_pid))
-#        else: open(self.proc_path, 'w').close() # Create empty file
-#      else:
-#        # If the .proc file is present then we try to load the information stored in it (PID only)
-#        if not self.isFileEmpty(self.proc_path):
-#          with open(self.proc_path, 'r') as pidProcFile:
-#            # The first line inside .proc contains the PID of the running ROS process spawned by the bash script while the second (not needed here) is its exit code
-#            self.proc_pid = int(pidProcFile.readline())
-#    except:
-#      rospy.logerr('SR2: Something happend while trying to read/write from/to the PID files')
-
   def isFileEmpty(self, _path):
     '''
     Checks if a given file is empty
@@ -182,10 +128,34 @@ class SR2Worker(QObject):
     try: return stat(_path).st_size == 0
     except error: return False
 
-  def loadPid(self, _path, target):
+  def loadPid(self, _path):
+    '''
+    Returns a PID stored in a valid file _path; else returns None
+    :param _path: path to an existing and not empty file
+    '''
     if self.checkFileExists(_path) and not self.isFileEmpty(_path):
       with open(_path, 'r') as pidFile:
-        target = int(pidFile)
+        return int(pidFile.readline())
+    else: return None
+    
+  #@staticmethod
+  def checkPid(self, pid):
+    '''
+    Checks if a process with a given PID is running or not
+    '''
+    try:
+      kill(pid, 0)
+    except OSError as ose:
+      return ose.errno == errno.EPERM
+    except TypeError:
+      return False
+    else:
+        return True
+#    try:
+#      if pid: kill(pid, 0)
+#      return True
+#    except OSError:
+#      return False
 
   def checkProcessRunning(self):
     '''
@@ -246,8 +216,12 @@ class SR2Worker(QObject):
       - single line only: if the process is still running its PID is stored here
       - two lines: if the process has stopped the first line stores its (now useless) PID and second one - the process' exit code
     '''
+    rospy.loginfo('SR2: Trying to retrieve exit status')
     # Check if .proc file exits
     self.checkFileExists(self.proc_path) # If file was not present we create a new empty one. If file is empty the code that follows will be omitted
+    if self.isFileEmpty(self.proc_path): 
+      rospy.logwarn('SR2: .proc appears to be empty')
+      return
 
     # Check if .proc file has a second line (remember: first line -> PID, second line -> exit code (if present))
     with (self.proc_path, 'r') as proc_file:
@@ -257,9 +231,11 @@ class SR2Worker(QObject):
       # Keep iterating until the bash script doesn't write the exit code of the process
       # TODO If the bash script fails to write the exit code to the file this will lead to an infinite loop! See how to avoid that. Maybe add a timeout but then what's next?
       while len(lines) != 2:
+        rospy.loginfo('SR2: Waiting for exit code')
         lines = proc_file.readlines()
 
       self.exit_code = int(lines[1]) # Second line contains the exit code so we convert it from string to integer and store it
+      rospy.loginfo('SR2: Exit code %d', self.exit_code)
 
 
   @pyqtSlot()
@@ -272,8 +248,8 @@ class SR2Worker(QObject):
     # Make sure that directories exist and both PID files are there (in case between init of the worker object and calling the start slot these have been deleted)
     self.checkRootDirExists()
     # If files are present and not empty then load PIDs
-    self.loadPid(self.bash_path, self.bash_pid)
-    self.loadPid(self.proc_path, self.proc_pid)
+    self.bash_pid = self.loadPid(self.bash_path)
+    self.proc_pid = self.loadPid(self.proc_path)
 
     # If we have restored the UI or triggered the start slot again while the PID of the bash process and external process are present we can skip the creation of the external processes
     if self.bash_pid and self.proc_pid:
@@ -285,19 +261,15 @@ class SR2Worker(QObject):
     rospy.loginfo('SR2: Attempting to launch ROS process')
     # Start the detached process with the bash script as the command and the rest as the arguments for the script
     # The working directory argument (here '/tmp') HAS to be present otherwise no PID will be returned (see Qt documentation)
-    print('******************CHECK START********************')
-    print(self.command, self.args)
     self.bash_status, self.bash_pid = QProcess.startDetached(self.command, self.args, '/tmp')
-    print(self.bash_status, self.bash_pid)
     #self.bash_status, self.bash_pid = QProcess.startDetached('htop', [], '/tmp')
-    self.writePidToFile(self.dir_name, self.bash_pid) # Write the PID of the started bash script inside the .bash file
-    print('******************CHECK END********************')
+    self.writePidToFile(self.bash_path, self.bash_pid) # Write the PID of the started bash script inside the .bash file
 
     # Check if process has started properly
     if self.bash_status and self.bash_pid:
       rospy.loginfo('SR2: ROS process successfully started')
       self.proc_status = ProcStatus.RUNNING
-      self.loadPid(self.proc_path, self.proc_pid)
+      self.proc_pid = self.loadPid(self.proc_path)
     else: self.proc_status = ProcStatus.FAILED_START
 
     self.statusSignal.emit(self.proc_status)
@@ -323,6 +295,7 @@ class SR2Worker(QObject):
 
     # First send SIGINT to external ROS process
     if self.proc_pid: kill(self.proc_pid, SIGINT)
+    QThread.sleep(2)
 
     # After the ROS process has been stopped the bash script that has spawned it will receive its exit code
     # and write it to the .proc file
@@ -333,7 +306,8 @@ class SR2Worker(QObject):
       return
 
     # Retrieve the exit status of the ROS process from the .proc file (second line)
-    self.getExitStatus()
+    # FIXME Figure out how to retrieve the exit status from the .proc file properly
+#    self.getExitStatus()
 
     # Based on the exit code of the ROS process emit a signal
     if not self.exit_code: self.proc_status = ProcStatus.FINISHED
@@ -355,7 +329,7 @@ class SR2Worker(QObject):
     An external timer triggers this slot at a specific interval
     The slot checks if the external ROS process is still running and reports back by emitting a statusSignal
     '''
-
+    
     # In case the ROS process has finished, is inactive or failed we don't change the status
     if self.checkProcessRunning():
       self.proc_status = ProcStatus.RUNNING
