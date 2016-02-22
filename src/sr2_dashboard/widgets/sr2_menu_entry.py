@@ -150,6 +150,7 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
   It acts the same way as a SR2ButtonWidget
   '''
 
+  checkRecoverySignal = pyqtSignal()
   startSignal = pyqtSignal()
   stopSignal = pyqtSignal()
 
@@ -211,6 +212,7 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
     # Connect worker's status signal to the status slot of the menu entry
     self.worker.statusSignal.connect(self.status)
+    self.worker.recoverySignal.connect(self.recover)
     self.timer.timeout.connect(self.worker.status)
     self.thread.started.connect(self.timer.start)
     self.startSignal.connect(self.worker.start)
@@ -220,6 +222,10 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     self.timer.moveToThread(self.thread)
 
     self.thread.start()
+
+    self.recovered = False
+    self.checkRecoverySignal.connect(self.worker.checkRecoveryState)
+    self.checkRecoverySignal.emit()
 
   def __del__(self):
     # Stop thread
@@ -236,13 +242,14 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     # since those are destroyed every  time the view is hidden thus
     # only the menu entry remains
     try:
-      if self.toggled:
+      if self.toggled and not self.recovered:
         rospy.loginfo('SR2: Shutting down external process')
         self.close()
         self.toggled = False
         self.setIcon(self._icons[IconType.inactive])
         self.stopSignal.emit()  # Tell worker to stop external ROS process
       else:
+        self.recovered = False
         rospy.loginfo('SR2: Launching external process')
         self.toggled = True
         self.setIcon(self._icons[IconType.running])
@@ -264,3 +271,10 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     if status in [ProcStatus.INACTIVE, ProcStatus.FINISHED]: self.setIcon(self._icons[IconType.inactive])
     elif status in [ProcStatus.FAILED_START, ProcStatus.FAILED_STOP]: self.setIcon(self._icons[IconType.error])
     else: self.setIcon(self._icons[IconType.running])
+
+  @pyqtSlot(int)
+  def recover(self, status):
+    if status == ProcStatus.RUNNING:
+      self.setIcon(self._icons[IconType.running])
+      #self.toggled = False
+      self.recovered = True
