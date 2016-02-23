@@ -32,10 +32,18 @@ class SR2Worker(QObject):
   statusSignal = pyqtSignal(int)
   recoverySignal = pyqtSignal(int) # Emitted if PID file is present and process is running; this signal is used ONLY when starting the application and recovering the state of the UI
 
-  def __init__(self, command, pkg, args=None):
+  def __init__(self, cmd, pkg, args=None):
     super(SR2Worker, self).__init__()
 
-    if not command or not pkg or not args: return
+    if not cmd and not pkg and not args: return
+
+    self.cmd = cmd
+    self.args = []
+    if not pkg:
+      # We have an "app" case
+      if args: self.args = args.split() # Split args-string on every whitespace and create args-list of strings
+      else: self.args.append('') # No arguments
+
 
     self.proc_status = ProcStatus.INACTIVE
     # Use None as default value for the PID otherwise you are in for a BIG surprise if you run kill -SIGINT with the incorrect PID)
@@ -44,11 +52,10 @@ class SR2Worker(QObject):
 
     # Setup files
     self.dir_name = '/tmp'
-    self.proc_path = self.dir_name + '/pid_' + command + ' ' + pkg + ' ' + args
-    self.proc_path = self.proc_path.replace('=','').replace('.','').replace(' ','')
+    self.proc_path = self.dir_name + '/pid_' + cmd + ((' ' + pkg) if pkg else '') + ((' ' + args) if args else '')
+    self.proc_path = self.proc_path.replace('=','').replace('.','').replace(' ','').replace(':','')
+    print('------------------------ %s --------------------' % self.proc_path)
 
-    self.command = command
-    self.args = [pkg, args]
     self.checkFileExists(self.proc_path)
 
   def checkFileExists(self, _path):
@@ -74,19 +81,19 @@ class SR2Worker(QObject):
     :param path: path of PID file
     :param source: PID
     '''
-    rospy.loginfo('SR2: Attempting to write %s to %s**************************' % (str(source), _path))
+    rospy.loginfo('SR2: Attempting to write %s to %s' % (str(source), _path))
     if not source:
       return
     # Writing to a non-existent file automatically creates a new one however we also want to check if it's empty or not!
     if self.checkFileExists(_path) and self.isFileEmpty(_path):
-      rospy.loginfo('SR2: File exists and is not empty. Will write to file**************************')
+      rospy.loginfo('SR2: File exists and is not empty. Will write to file')
       with open(_path, 'w') as pidFile:
         pidFile.seek(0)
         try:
           pidFile.write(str(source))
         except IOError:
           rospy.logerr('SR2: Failed to write to file')
-      rospy.loginfo('SR2: Writing to file completed**************************')
+      rospy.loginfo('SR2: Writing to file completed')
 
   def isFileEmpty(self, _path):
     '''
@@ -174,7 +181,7 @@ class SR2Worker(QObject):
     rospy.loginfo('SR2: Attempting to launch ROS process')
     # Start the detached process with the bash script as the command and the rest as the arguments for the script
     # The working directory argument (here '/tmp') HAS to be present otherwise no PID will be returned (see Qt documentation)
-    self.proc_status, self.proc_pid = QProcess.startDetached(self.command, self.args, self.dir_name)
+    self.proc_status, self.proc_pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
 
     # Check if process has started properly
     if self.proc_status and self.proc_pid:

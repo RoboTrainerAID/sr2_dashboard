@@ -22,17 +22,52 @@ from yaml import YAMLError
 # QtGui modules
 #from python_qt_binding.QtGui import ...
 # QtCore modules
-from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal
+from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool
 
 # Widgets
 from sr2_view import SR2MenuEntryViewWidget as sr2mev
 from sr2_monitor_object import SR2Worker, ProcStatus
+from sr2_runnable_object import ServiceRunnable
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor as sr2pce
 
 class IconType():
   inactive = 0
   running = 1
   error = 2
+
+  @staticmethod
+  def loadIcons(name, with_view=False):
+    '''
+    Loads predefined icons
+    '''
+    # Create paths
+    icon_paths = [['sr2_dashboard', 'resources/images']]
+    paths = []
+    rp = rospkg.RosPack()
+    for path in icon_paths:
+        paths.append(os.path.join(rp.get_path(path[0]), path[1]))
+
+    icon_helper = IconHelper(paths, name)
+
+    icons = []
+    icons_view = []
+    res_icons = None
+    converted_icons = []
+
+    # Add icons
+    if with_view:
+      icons_view.append(['status/status_inactive.svg'])         # Inactive
+      icons_view.append(['status/status_running.svg'])          # Active
+      icons_view.append(['status/status_error.svg'])            # Failed
+    else:
+      icons.append(['control/menu/diagnostics_inactive.png'])   # Inactive view
+      icons.append(['control/menu/diagnostics_running.png'])    # Active view
+      icons.append(['control/menu/diagnostics_error.png'])      # Failed
+
+    res_icons = list(icons_view if with_view else icons)
+    converted_icons = icon_helper.set_icon_lists(icons_view if with_view else icons)
+
+    return (converted_icons[0], res_icons)
 
 class SR2MenuEntryWidget():
 
@@ -51,8 +86,14 @@ class SR2MenuEntryWidget():
     else:
       # Check if menu entry has a view or not and return repsective instance
       rospy.loginfo('SR2: Menu entry is of type "%s"' % yamlItemData['type'])
-      if yamlItemData['type'] == 'view': return SR2MenuEntryWidgetWithView(SR2MenuEntryContext, yamlItemData, SR2MenuEntryName)
-      else: return SR2MenuEntryWidgetNoView(SR2MenuEntryContext, yamlItemData, SR2MenuEntryName)
+      if yamlItemData['type'] == 'view':
+        return SR2MenuEntryWidgetWithView(SR2MenuEntryContext, yamlItemData, SR2MenuEntryName)
+      elif yamlItemData['type'] == 'noview':
+        if 'menu_entry' in yamlItemData:
+          if 'service' not in yamlItemData['menu_entry']: return SR2MenuEntryWidgetNoView(SR2MenuEntryContext, yamlItemData, SR2MenuEntryName)
+          else: return SR2MenuEntryWidgetNoViewService(SR2MenuEntryContext, yamlItemData, SR2MenuEntryName)
+        return None
+      return None
 
 class SR2MenuEntryWidgetWithView(IconToolButton):
   '''
@@ -67,29 +108,10 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
       rospy.logwarn('SR2: Detected menu entry with view which does NOT contain any buttons. An empty view will be created instead')
       return None
 
-    icons = []
-    icons_view = []
-    icons.append(['control/menu/diagnostics_inactive.png'])        # Inactive view
-    icons.append(['control/menu/diagnostics_running.png'])  # Active view
-    icons.append(['control/menu/diagnostics_error.png'])
-    icons_view.append(['status/status_inactive.svg'])
-    icons_view.append(['status/status_running.svg'])
-    icons_view.append(['status/status_error.svg'])
-
-    icon_paths = [['sr2_dashboard', 'resources/images']]
-
-    super(SR2MenuEntryWidgetWithView, self).__init__(name, icons, icon_paths=icon_paths)
-
-    # Create paths to icons
-    paths = []
-    rp = rospkg.RosPack()
-    for path in icon_paths:
-        paths.append(os.path.join(rp.get_path(path[0]), path[1]))
-    self.icon_helper = IconHelper(paths, name)
-    converted_icons = self.icon_helper.set_icon_lists(icons)
-    self._icons = converted_icons[0]
-    converted_icons_view = self.icon_helper.set_icon_lists(icons_view) if icons_view else None
-    self._icons_view = converted_icons_view[0] if converted_icons_view else None
+    # Load icons
+    icons = IconType.loadIcons(name, True)
+    self.icons = icons[0]
+    super(SR2MenuEntryWidgetWithView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
 
     self.view_widget = None
     self.name = name
@@ -131,7 +153,6 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
       except Exception as e:
         if not self.view_widget:
           rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
-          raise
         self.toggled = False
 
   def close(self):
@@ -143,6 +164,62 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
         self.view_widget.shutdown()
         self.view_widget.close()
         self.view_widget = None
+
+class SR2MenuEntryWidgetNoViewService(IconToolButton):
+  '''
+  Menu entry without a view which can be places in the toolbar of the SR2 Dashboard
+  It acts the same way as a SR2ButtonWidget however stopping the triggered action is
+  not possible. The action that is being executed is a ROS service call (Trigger.srv)
+  '''
+  @pyqtSlot()
+  def call(self):
+    rospy.loginfo('SR2: Calling service %s from thread %d', self.args, int(QThread.currentThreadId()))
+    self.thread_pool.start(self.service)
+
+  @pyqtSlot(bool)
+  def block(self, state):
+    if state: self.setIcon(self._icons[IconType.running])
+    self.setEnabled(not state)
+
+  @pyqtSlot(int, str)
+  def reply(self, status, msg):
+    if status in [ServiceRunnable.CallStatus.SUCCESS_TRUE, ServiceRunnable.CallStatus.SUCCESS_FALSE]:
+      self.setIcon(self._icons[IconType.inactive])
+      rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
+    else:
+      self.setIcon(self._icons[IconType.error])
+      rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"', self.args, int(QThread.currentThreadId()), msg)
+
+    self.tooltip = '<nobr>' + self.name + ' : "' + self.cmd + ' ' + self.args + '"</nobr><br/>Reply: ' + msg
+
+  def __init__(self, context, yamlSR2MenuEntry, name='Default name', minimal=True):
+    # Load icons
+    icons = IconType.loadIcons(name, True)
+    self.icons = icons[0]
+    super(SR2MenuEntryWidgetNoViewService, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
+
+    self.name = name
+    self.setIcon(self._icons[IconType.inactive])
+    self.context = context
+
+    rospy.loginfo('SR2: Parsing button configuration', yamlSR2MenuEntry)
+    self.cmd = ''   # Can only be rosservice call
+    self.args = ''  # Args contains
+
+    #Try each of the possible configurations: node, launch and service
+    self.cmd, self.args, timeout = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])[1:] # Package is empty so we can exclude it
+    #self.args = '/' + self.args # Example: rosservice call /trigger_srv
+
+    rospy.loginfo('SR2: Found "%s /%s"' % (self.cmd, self.args))
+    self.tooltip = self.name + ' : "' + self.cmd + ' ' + self.args + '"<br/>Reply: --'
+    self.setToolTip(self.tooltip)
+
+    self.thread_pool = QThreadPool(self)
+    self.service = ServiceRunnable(self.args, timeout)
+    self.service.setAutoDelete(False)
+    self.service.signals.srv_running.connect(self.block)
+    self.service.signals.srv_status.connect(self.reply)
+    self.clicked.connect(self.call)
 
 class SR2MenuEntryWidgetNoView(IconToolButton):
   '''
@@ -156,23 +233,9 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
   def __init__(self, context, yamlSR2MenuEntry, name='Default name', minimal=True):
     # Load icons
-    icons = []
-    icons.append(['status/status_inactive.svg'])
-    icons.append(['status/status_running.svg'])
-    icons.append(['status/status_error.svg'])
-
-    icon_paths = [['sr2_dashboard', 'resources/images']]
-
-    super(SR2MenuEntryWidgetNoView, self).__init__(name, icons, icon_paths=icon_paths)
-
-    # Create paths to icons
-    paths = []
-    rp = rospkg.RosPack()
-    for path in icon_paths:
-        paths.append(os.path.join(rp.get_path(path[0]), path[1]))
-    self.icon_helper = IconHelper(paths, name)
-    converted_icons = self.icon_helper.set_icon_lists(icons)
-    self._icons = converted_icons[0]
+    icons = IconType.loadIcons(name, True)
+    self.icons = icons[0]
+    super(SR2MenuEntryWidgetNoView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
 
     self.name = name
     self.toggled = False
@@ -180,23 +243,16 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     self.clicked.connect(self.toggleDo) # self.show
     self.context = context
 
-    # TODO Add SR2Worker to this menu entry along with all related to it
-    # Parse command and arguments and pass these to the constructor of the worker
-    #self.worker = SR2Worker(...)
-    # Add slots for changing the UI based on feedback from worker
-    # Add signals for starting/stoping of worker and triggering status report
-    # Add timer, create the connections (slots,signals) etc.
-
     rospy.loginfo('SR2: Parsing button configuration', yamlSR2MenuEntry)
     self.pkg = ''
     self.cmd = ''   # Can be rosrun/roslaunch/rosservice call
-    self.args = []  # Args is the actual ROS node/launch file/etc. we want to start
+    self.args = ''  # Args is the actual standalone app/ ROS node/ ROS launch file/etc. we want to start
 
     #Try each of the possible configurations: node, launch and service
     self.pkg, self.cmd, self.args = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])
 
     rospy.loginfo('SR2: Found "%s %s %s"' % (self.cmd, self.pkg, self.args))
-    self.setToolTip(self.name + ' : "' + self.cmd + ' ' + self.pkg + ' ' + str(self.args).strip('[]').replace(',',' ') + '"')
+    self.setToolTip(self.name + ' : "' + self.cmd + ' ' + self.pkg + ' ' + self.args + '"')
 
     # The package itself is considered as an argument so we attach it to args
     self.worker = SR2Worker(self.cmd, self.pkg, self.args)
@@ -257,7 +313,6 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     except Exception as e:
       if not self.view_widget:
         rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
-        raise
       self.toggled = False
 
   def close(self):
