@@ -81,12 +81,12 @@ dashboard:
 
     # menu 3
     - modules:
-
+        # WARNING: some application behave differently based on whether a current instance of that same application is running or not (example: firefox)
         # module 5
         - name: "RQT Graph"
           type: "noview"
           # menu entry 1 in menu 3
-          menu_entry:
+          menu_entry: #rqt_graph, rqt_console
             app: "rqt_graph" # Arguments can be included inside the string; all arguments have to be separated by the command by a space
                              # Example: "firefox -new-tab www.google.com" will be split into: cmd="firefox" and args="-new-tab www.google.com"
         # module 6

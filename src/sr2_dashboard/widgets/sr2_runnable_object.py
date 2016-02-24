@@ -32,15 +32,15 @@ class ServiceRunnable(QRunnable):
     response_msg = ''
 
     self.signals.srv_running.emit(True)
-    rospy.wait_for_service(self.service, self.timeout)
     try:
+      rospy.wait_for_service(self.service, self.timeout)
       trigger_call = rospy.ServiceProxy(self.service, Trigger)
       call = trigger_call()
       response_status = ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else ServiceRunnable.CallStatus.SUCCESS_FALSE
       response_msg = call.message
-    except rospy.ServiceException, e:
+    except rospy.ROSException, e:
       response_status = ServiceRunnable.CallStatus.FAILED
-      response_msg = e
+      response_msg = e.message
 
     self.signals.srv_running.emit(False)
     self.signals.srv_status.emit(response_status, response_msg)

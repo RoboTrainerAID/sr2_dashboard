@@ -35,14 +35,15 @@ class SR2Worker(QObject):
   def __init__(self, cmd, pkg, args=None):
     super(SR2Worker, self).__init__()
 
+    if not cmd: return
     if not cmd and not pkg and not args: return
 
     self.cmd = cmd
-    self.args = []
-    if not pkg:
-      # We have an "app" case
-      if args: self.args = args.split() # Split args-string on every whitespace and create args-list of strings
-      else: self.args.append('') # No arguments
+    if args:
+      self.args = args.split() # Split args-string on every whitespace and create args-list of strings
+      if pkg:
+        self.args = [pkg] + self.args
+    else: self.args = ['']
 
 
     self.proc_status = ProcStatus.INACTIVE
@@ -52,7 +53,7 @@ class SR2Worker(QObject):
 
     # Setup files
     self.dir_name = '/tmp'
-    self.proc_path = self.dir_name + '/pid_' + cmd + ((' ' + pkg) if pkg else '') + ((' ' + args) if args else '')
+    self.proc_path = self.dir_name + '/pid_' + cmd + ((' ' + pkg) if pkg else '') + ((' ' + args) if args == [''] else '')
     self.proc_path = self.proc_path.replace('=','').replace('.','').replace(' ','').replace(':','')
     print('------------------------ %s --------------------' % self.proc_path)
 
@@ -123,8 +124,6 @@ class SR2Worker(QObject):
       kill(pid, 0)
     except OSError:
       return False
-#    except TypeError:
-#      return False
     else:
       return True
 
@@ -181,7 +180,10 @@ class SR2Worker(QObject):
     rospy.loginfo('SR2: Attempting to launch ROS process')
     # Start the detached process with the bash script as the command and the rest as the arguments for the script
     # The working directory argument (here '/tmp') HAS to be present otherwise no PID will be returned (see Qt documentation)
+
+    print('**************************************** CMD: %s | ARGS: %s' % (self.cmd, str(self.args)))
     self.proc_status, self.proc_pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
+    print('**************************************** STATUS: %s | PID: %d' % (('True' if self.proc_status else 'False'), self.proc_pid))
 
     # Check if process has started properly
     if self.proc_status and self.proc_pid:

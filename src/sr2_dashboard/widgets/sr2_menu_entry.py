@@ -22,7 +22,7 @@ from yaml import YAMLError
 # QtGui modules
 #from python_qt_binding.QtGui import ...
 # QtCore modules
-from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool
+from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
 
 # Widgets
 from sr2_view import SR2MenuEntryViewWidget as sr2mev
@@ -121,6 +121,7 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
     self.context = context
 
     self.setToolTip(self.name)
+    self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
 
     self.close_mutex = QMutex()
     self.show_mutex = QMutex()
@@ -173,13 +174,14 @@ class SR2MenuEntryWidgetNoViewService(IconToolButton):
   '''
   @pyqtSlot()
   def call(self):
-    rospy.loginfo('SR2: Calling service %s from thread %d', self.args, int(QThread.currentThreadId()))
-    self.thread_pool.start(self.service)
+    if not self.disabled:
+      rospy.loginfo('SR2: Calling service %s from thread %d', self.args, int(QThread.currentThreadId()))
+      self.thread_pool.start(self.service)
 
   @pyqtSlot(bool)
   def block(self, state):
     if state: self.setIcon(self._icons[IconType.running])
-    self.setEnabled(not state)
+    self.disabled = state
 
   @pyqtSlot(int, str)
   def reply(self, status, msg):
@@ -209,8 +211,9 @@ class SR2MenuEntryWidgetNoViewService(IconToolButton):
     #Try each of the possible configurations: node, launch and service
     self.cmd, self.args, timeout = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])[1:] # Package is empty so we can exclude it
     #self.args = '/' + self.args # Example: rosservice call /trigger_srv
-
     rospy.loginfo('SR2: Found "%s /%s"' % (self.cmd, self.args))
+
+    self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
     self.tooltip = self.name + ' : "' + self.cmd + ' ' + self.args + '"<br/>Reply: --'
     self.setToolTip(self.tooltip)
 
@@ -220,6 +223,8 @@ class SR2MenuEntryWidgetNoViewService(IconToolButton):
     self.service.signals.srv_running.connect(self.block)
     self.service.signals.srv_status.connect(self.reply)
     self.clicked.connect(self.call)
+
+    self.disabled = False
 
 class SR2MenuEntryWidgetNoView(IconToolButton):
   '''
@@ -250,8 +255,9 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
     #Try each of the possible configurations: node, launch and service
     self.pkg, self.cmd, self.args = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])
-
     rospy.loginfo('SR2: Found "%s %s %s"' % (self.cmd, self.pkg, self.args))
+
+    self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
     self.setToolTip(self.name + ' : "' + self.cmd + ' ' + self.pkg + ' ' + self.args + '"')
 
     # The package itself is considered as an argument so we attach it to args
