@@ -1,3 +1,6 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: View UI component
+
 # General
 from os import kill, mkdir, exists, remove, rmdir, stat, error, path
 from shutil import rmtree

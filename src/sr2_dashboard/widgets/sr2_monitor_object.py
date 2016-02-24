@@ -1,3 +1,6 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: Infrastructure for executing external processes, controlling and monitoring these
+
 from os import kill, mkdir, remove, rmdir, stat, error, path, makedirs, umask, chmod
 from exceptions import IOError
 from os.path import exists, isdir
@@ -6,7 +9,6 @@ from signal import SIGINT
 import errno
 # ROS
 import rospy
-from rospkg import RosPack
 # PyQt, RQt related
 from python_qt_binding.QtCore import QObject, pyqtSignal, pyqtSlot, QProcess, QThread
 
@@ -55,7 +57,6 @@ class SR2Worker(QObject):
     self.dir_name = '/tmp'
     self.proc_path = self.dir_name + '/pid_' + cmd + ((' ' + pkg) if pkg else '') + ((' ' + args) if args == [''] else '')
     self.proc_path = self.proc_path.replace('=','').replace('.','').replace(' ','').replace(':','')
-    print('------------------------ %s --------------------' % self.proc_path)
 
     self.checkFileExists(self.proc_path)
 
@@ -68,7 +69,7 @@ class SR2Worker(QObject):
     try:
       if not path.isfile(_path):
         open(_path, 'w').close()
-        rospy.loginfo('File %s was successfully created', _path)
+        rospy.loginfo('SR2: File %s was successfully created', _path)
         return False
       else: return True
     except IOError:
@@ -118,6 +119,7 @@ class SR2Worker(QObject):
   def checkPid(self, pid):
     '''
     Checks if a process with a given PID is running or not
+    :param pid: PID of process that needs to be checked
     '''
     if not pid: return False
     try:
@@ -160,6 +162,11 @@ class SR2Worker(QObject):
 
   @pyqtSlot()
   def checkRecoveryState(self):
+    '''
+    Checks if PID for given process can be loaded from PID file
+    Based on the success a recovery state is triggered in the owner of this object
+
+    '''
     self.proc_pid = self.loadPid(self.proc_path)
     if self.proc_pid and self.checkProcessRunning(): self.proc_status = ProcStatus.RUNNING
     self.recoverySignal.emit(self.proc_status) # Recover the button that started this process to its toggled states
@@ -197,6 +204,10 @@ class SR2Worker(QObject):
 
   @pyqtSlot()
   def stop(self):
+    '''
+    Emit signal based on final state of process, kill process based on its PID
+    and cleanup PID file used while the process was alive
+    '''
     rospy.loginfo('SR2: Attempting to stop ROS process')
 
     # Check if both the bash script and the ROS process are running

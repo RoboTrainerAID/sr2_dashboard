@@ -1,33 +1,60 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Feb 23 15:40:13 2016
-
-@author: atanasov2
-"""
-
+# Author: Aleksandar Vladimirov Atanasov
+# Description: Infrastructure for executing ROS service calls
 
 import rospy
 from std_srvs.srv import Trigger
 from PyQt4.QtCore import QRunnable, pyqtSignal, QObject
 
 class ServiceCallSignals(QObject):
-  srv_status = pyqtSignal(int, str)
-  srv_running = pyqtSignal(bool)
+  '''
+  Contains state-related signals that are used by ServiceRunnable
+  '''
+  srv_status = pyqtSignal(int, str) # (one of the values stored inside CallStatus, reply message)
+  srv_running = pyqtSignal(bool)    # if True caller UI component will be blocked else unblocked
 
 class ServiceRunnable(QRunnable):
+  '''
+  Used to intiate a ROS service call, control the UI component that has triggered the procedure and reports back
+  '''
 
   class CallStatus():
+    '''
+    A service call can have three states upon completion:
+
+      - successful with status True - button's icon changes to INACTIVE
+      - successful with status False - button's icon changes to INACTIVE
+      - failed - button's icon changes to ERROR
+    '''
     SUCCESS_TRUE = 0
     SUCCESS_FALSE = 1
     FAILED = 2
 
   def __init__(self, service_name, timeout=10):
+    '''
+    Initializes the ServiceRunnable
+    :param service_name: name of the ROS service that we want to call
+    :param timout: maximum amount of time (in seconds) required for connecting to the given service
+    '''
     super(ServiceRunnable, self).__init__()
     self.signals = ServiceCallSignals()
     self.service = service_name
     self.timeout = timeout
 
   def run(self):
+    '''
+    When executed (using QThreadPool.start(<ServiceRunnable_instance>)) following
+  happens:
+
+    - Button that has triggerd it gets blocked
+    - Button's icon changed to RUNNING
+    - ROS service gets called (of type Trigger)
+    - After given timeout or upon receiving a reply in the given time status is
+      reported back to the button
+    - Button that has triggered it gets unblocked
+    - Button's icon changes to INACTIVE (upon successful service call) or ERROR (if timeout or other exception has been raised)
+
+  All is ran inside a separate thread retrieved from the thread pool
+    '''
     response_status = 0
     response_msg = ''
 

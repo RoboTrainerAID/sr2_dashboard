@@ -1,3 +1,6 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: Extracts data from menu_entry or button
+
 import rospy
 class SR2PkgCmdExtractor:
   '''
@@ -23,8 +26,6 @@ class SR2PkgCmdExtractor:
     pkg = ''
     cmd = ''   # Can be rosrun/roslaunch/rosservice call
     args = ''  # Args is the actual ROS node/launch file/etc. we want to start (exception: see "app" case)
-
-    print('************ YAML ENTRY', yamlEntry)
 
     #Try each of the possible configurations: node, launch and service
     try:
