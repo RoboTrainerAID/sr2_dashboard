@@ -285,6 +285,7 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
 
     self.thread.start()
 
+    self.status = ProcStatus.INACTIVE
     self.recovered = False
     self.checkRecoverySignal.connect(self.worker.checkRecoveryState)
     self.checkRecoverySignal.emit()
@@ -304,13 +305,13 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     # since those are destroyed every  time the view is hidden thus
     # only the menu entry remains
     try:
-      if self.toggled and not self.recovered:
+      if self.toggled and not self.recovered and self.status == ProcStatus.RUNNING:
         rospy.loginfo('SR2: Shutting down external process')
         self.close()
         self.toggled = False
         self.setIcon(self._icons[IconType.inactive])
         self.stopSignal.emit()  # Tell worker to stop external ROS process
-      else:
+      elif self.status != ProcStatus.RUNNING:
         self.recovered = False
         rospy.loginfo('SR2: Launching external process')
         self.toggled = True
@@ -333,9 +334,12 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     elif status in [ProcStatus.FAILED_START, ProcStatus.FAILED_STOP]: self.setIcon(self._icons[IconType.error])
     else: self.setIcon(self._icons[IconType.running])
 
+    self.status = status
+
   @pyqtSlot(int)
   def recover(self, status):
     if status == ProcStatus.RUNNING:
       self.setIcon(self._icons[IconType.running])
+      self.status = status
       #self.toggled = False
       self.recovered = True
