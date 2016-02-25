@@ -190,8 +190,7 @@ class SR2Worker(QObject):
     # The working directory argument (here '/tmp') HAS to be present otherwise no PID will be returned (see Qt documentation)
 
     print('**************************************** CMD: %s | ARGS: %s' % (self.cmd, str(self.args)))
-    #self.proc_status, self.proc_pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
-    self.proc_status = QProcess.startDetached(self.cmd, self.args)
+    self.proc_status, self.proc_pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
     print('**************************************** STATUS: %s | PID: %d' % (('True' if self.proc_status else 'False'), self.proc_pid))
 
     # Check if process has started properly
@@ -227,7 +226,9 @@ class SR2Worker(QObject):
 
     # First send SIGINT to external ROS process
     if self.proc_pid: kill(self.proc_pid, SIGINT)
-    QThread.sleep(2)
+#    QThread.sleep(2)
+    # Reset PIDs
+    self.proc_pid = None
 
     # After the ROS process has been stopped the bash script that has spawned it will receive its exit code
     # and write it to the .proc file
@@ -243,9 +244,6 @@ class SR2Worker(QObject):
     # Clean up files and directory
     self.cleanup()
 
-    # Reset PIDs
-    self.proc_pid = None
-
   @pyqtSlot()
   def status(self):
     '''
@@ -258,8 +256,9 @@ class SR2Worker(QObject):
 
     if running:
       self.proc_status = ProcStatus.RUNNING
-    elif self.proc_pid and self.proc_status == ProcStatus.RUNNING:
-      self.stop()
+    else:
+      if self.proc_pid and self.proc_status == ProcStatus.RUNNING:
+        self.stop()
 
     #if self.proc_pid and self.proc_status == ProcStatus.RUNNING: self.stop()
 

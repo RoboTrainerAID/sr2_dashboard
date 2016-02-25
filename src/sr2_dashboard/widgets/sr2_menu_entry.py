@@ -80,7 +80,7 @@ class SR2MenuEntryWidget():
     :param override_icons: if set to true default icons will be used (if available!) inside "$(find sr2_dashboard)/resources/images"
     :returns: SR2MenuEntryWidget or SR2MenuEntryWidgetWithView which can be added to a Dashboard
     '''
-    rospy.loginfo(yamlItemData) # TODO Remove this
+#    rospy.loginfo(yamlItemData) # TODO Remove this
 
     if SR2MenuEntryContext == None or yamlItemData == None: return None
     else:

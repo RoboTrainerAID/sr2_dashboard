@@ -7,7 +7,7 @@
 
 
 
-LAYOUT
+LAYOUT -- Currently unable to find a way to setup layout from code
 left: put 4)
 top: open/close views, statusbar
 right+center: views (1),2),3))
@@ -15,7 +15,7 @@ right+center: views (1),2),3))
 6)Add log output widget (see cob_dashboard and pr2_dashboard)
 7)View for dynamic_reconfigure (convert the YAML config file to ROS-compatible configuration file that can be embedded in the dynamic_reconfigure infrastructure)
 8)Add robot_monitor widget as view
-9)Add rqt_graph widget as view
+9)Add rqt_graph launcher
 10)Add perspective
 11)Add pose view as view (research what it does)
-12)Add TF tree as view
+12)Add TF tree launcher

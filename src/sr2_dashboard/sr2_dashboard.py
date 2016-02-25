@@ -19,7 +19,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-#from python_qt_binding.QtGui import ...
+from python_qt_binding.QtGui import QStatusBar, QToolBar
 
 # QtCore modules
 #from python_qt_binding.QtCore import ...
@@ -179,6 +179,18 @@ class SR2Dashboard(Dashboard):
     self.context = context
     self.yFile = None
     self.widgets = []
+    self.status_bar = QStatusBar()
+    self.status_bar.showMessage('SR2 status: Welcome to the SR2 Dashboard')
+    # TODO Add full support for the statusbar
+    self.status_bar.setObjectName('Statusbar')
+    self.status_bar.setMaximumHeight(30)
+    self.context.add_widget(self.status_bar)
+#    self.toolbar2 = QToolBar()
+#    self.toolbar2.setObjectName('Toolbar') # The toolbar automatically added to the SR2 Dashboard has the name 'Dashboard'
+#    self.context.add_toolbar(self.toolbar2)
+    # http://docs.ros.org/jade/api/qt_gui/html/classqt__gui_1_1plugin__context_1_1PluginContext.html
+    # Use context.add_widget(...) and context.add_widget(...) to add widgets to dashboard (set objectname parameter to unique value for each!)
+    # Use context.remove_widget(...) to remove them
 
     # Check if configuration is uploaded to the parameter server
     if not rospy.has_param('/sr2_dashboard/dashboard/menus'):
