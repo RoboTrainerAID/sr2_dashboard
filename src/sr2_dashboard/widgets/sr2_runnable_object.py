@@ -14,7 +14,7 @@ class ServiceCallSignals(QObject):
 
 class ServiceRunnable(QRunnable):
   '''
-  Used to intiate a ROS service call, control the UI component that has triggered the procedure and reports back
+  Intiate a ROS service call and reports back to the UI component that has triggered the procedure
   '''
 
   class CallStatus():

@@ -254,7 +254,7 @@ class SR2MenuEntryWidgetNoView(IconToolButton):
     self.args = ''  # Args is the actual standalone app/ ROS node/ ROS launch file/etc. we want to start
 
     #Try each of the possible configurations: node, launch and service
-    self.pkg, self.cmd, self.args = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])
+    self.pkg, self.cmd, self.args = sr2pce.getRosPkgCmdData(yamlSR2MenuEntry['menu_entry'])[:-1]
     rospy.loginfo('SR2: Found "%s %s %s"' % (self.cmd, self.pkg, self.args))
 
     self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))

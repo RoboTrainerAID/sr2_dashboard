@@ -57,17 +57,20 @@ class SR2PkgCmdExtractor:
       package: "lt"--------------------|_____data source
       node: "talker.py"----------------|
 
-    menu_entry:
-      buttons:
+    #menu_entry:
+      #buttons:
         - captions:
           ...
           package: "lt"----------------|_____data source
           node: "talker.py"------------|
     '''
-    assert yamlEntry != None, "Empty button configuration"
+    if not yamlEntry:
+      rospy.logwarn('SR2: Empty entry configuration')
+      return ('','','', 0)
     pkg = ''
     cmd = ''   # Can be rosrun/roslaunch/rosservice call
     args = ''  # Args is the actual ROS node/launch file/etc. we want to start (exception: see "app" case)
+    timeout = 5
 
     #Try each of the possible configurations: node, launch and service
     try:
@@ -89,19 +92,15 @@ class SR2PkgCmdExtractor:
             args = yamlEntry['service']
             rospy.loginfo('SR2: Service deteceted. Will use "rosservice call"')
             cmd = 'rosservice call'
-            timeout = 5
             if 'timeout' in yamlEntry:
               try:
                 timeout = int(yamlEntry['timeout'])
               except:
                 rospy.logerr('SR2: Timeout found however not an integer. Falling back to default: 5')
 
-            return (pkg, cmd, args, timeout)
           except KeyError as exc:
             rospy.logerr('SR2: Entry does not contain data that can be executed by the supported ROS tools. Add node, launch or service to YAML description')
             raise exc
-
-
     except KeyError as exc:
       try:
         # If finding "package" element inside the entry fails
@@ -115,6 +114,6 @@ class SR2PkgCmdExtractor:
       except:
         rospy.loginfo('SR2: error while loading YAML file. Missing node, launch, service or app to YAML entry')
         rospy.loginfo('SR2: full message: \n"%s"' % exc)
-        return ['','','']
+        return ('','','', 0)
 
-    return (pkg, cmd, args)
+    return (pkg, cmd, args, 0)

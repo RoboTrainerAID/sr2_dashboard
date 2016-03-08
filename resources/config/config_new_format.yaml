@@ -8,7 +8,7 @@ dashboard:
         - name: "Talker"
           type: "noview"
           # menu entry 1 in menu 1
-          menu_entry:
+          menu_entry: # describes what the entry will launch (a process or a view)
             package: "lt"
             node: "talker.py"
 
@@ -20,6 +20,9 @@ dashboard:
             # Buttons for view toggled by menu entry 2 in menu 1
             buttons:
               # button 1
+
+
+# TODO Remove caption
               - captions:
                   inactive: "Press me 1"
                   running: "Unpress me 1"
@@ -37,6 +40,12 @@ dashboard:
                   error: "Wooops... 2"
                 package: "lt"
                 launch: "talker"
+              - captions:
+                  inactive: "Press me 2"
+                  running: "Unpress me 2"
+                  error: "Wooops... 2"
+                package: "lt"
+                launch: "talker"
 
     # menu 2
     - modules:
@@ -44,20 +53,22 @@ dashboard:
 
         # module 3
         - name: "Listener"
+
+          # If type is 'noview' buttons-node will be skipped entirely
+          # If type is 'view' buttons will be parsed and a widget will be created for each button which will then be added to a grid view
           type: "noview"
           # menu entry 1 in menu 2
           menu_entry:
             # If type is 'noview' the menu entry acts as a command trigger (Trigger.srv if "service" else a ROS standalone application ("rqt_graph", "rqt_tf_tree" etc.))
             # If type is 'view' the menu entry will not contain any of the nodes below but instead all buttons will be used to generate the UI
             package: "lt"
+
             # node | launch | service | app
             # node -> execute 'rosrun'
             # launch -> execute 'roslaunch' (roslaunch allows multiple files to be launched through the same parent process)
             # service -> execute a 'rosservice call' command (currently only Trigger services are supported; initial states is always set to False)
             # app -> execute a standalone application ('rqt_graph', 'rqt_tf_tree' etc.(non-ROS applications are also supported!))
             node: "listener.py"
-            # If type is 'noview' buttons-node will be skipped entirely
-            # If type is 'view' buttons will be parsed and a widget will be created for each button which will then be added to a grid view
 
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
