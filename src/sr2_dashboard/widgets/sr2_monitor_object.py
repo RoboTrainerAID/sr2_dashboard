@@ -32,8 +32,8 @@ class SR2Worker(QObject):
   '''
 
   blockSignal = pyqtSignal()
-  statusSignal = pyqtSignal(int)
-  recoverySignal = pyqtSignal(int) # Emitted if PID file is present and process is running; this signal is used ONLY when starting the application and recovering the state of the UI
+  status_signal = pyqtSignal(int)
+  recover_signal = pyqtSignal(int) # Emitted if PID file is present and process is running; this signal is used ONLY when starting the application and recovering the state of the UI
 
   def __init__(self, cmd, pkg, args=None):
     super(SR2Worker, self).__init__()
@@ -159,7 +159,7 @@ class SR2Worker(QObject):
     except:
       if self.proc_pid:
         self.proc_status = ProcStatus.FAILED_STOP
-      self.statusSignal.emit(self.proc_status)
+      self.status_signal.emit(self.proc_status)
 
   @pyqtSlot()
   def checkRecoveryState(self):
@@ -170,7 +170,7 @@ class SR2Worker(QObject):
     '''
     self.proc_pid = self.loadPid(self.proc_path)
     if self.proc_pid and self.checkProcessRunning(): self.proc_status = ProcStatus.RUNNING
-    self.recoverySignal.emit(self.proc_status) # Recover the button that started this process to its toggled states
+    self.recover_signal.emit(self.proc_status) # Recover the button that started this process to its toggled states
 
   @pyqtSlot()
   def start(self):
@@ -182,7 +182,7 @@ class SR2Worker(QObject):
     if self.proc_pid:
       rospy.loginfo('SR2: Restoring state of UI component')
       self.proc_status = ProcStatus.RUNNING
-      self.statusSignal.emit(self.proc_status)
+      self.status_signal.emit(self.proc_status)
       return
 
     rospy.loginfo('SR2: Attempting to launch ROS process')
@@ -201,7 +201,7 @@ class SR2Worker(QObject):
       self.proc_pid = self.loadPid(self.proc_path)
     else: self.proc_status = ProcStatus.FAILED_START
 
-    self.statusSignal.emit(self.proc_status)
+    self.status_signal.emit(self.proc_status)
 
   @pyqtSlot()
   def stop(self):
@@ -215,7 +215,7 @@ class SR2Worker(QObject):
     if not self.checkProcessRunning():
       rospy.logwarn('SR2: External process not running so there is nothing to stop')
       self.proc_status = ProcStatus.INACTIVE
-      self.statusSignal.emit(self.proc_status)
+      self.status_signal.emit(self.proc_status)
       return
 
 #    if not self.bash_pid or not self.proc_pid: return
@@ -239,7 +239,7 @@ class SR2Worker(QObject):
       return
 
     self.proc_status = ProcStatus.FINISHED
-    self.statusSignal.emit(self.proc_status)
+    self.status_signal.emit(self.proc_status)
 
     # Clean up files and directory
     self.cleanup()
@@ -248,7 +248,7 @@ class SR2Worker(QObject):
   def status(self):
     '''
     An external timer triggers this slot at a specific interval
-    The slot checks if the external ROS process is still running and reports back by emitting a statusSignal
+    The slot checks if the external ROS process is still running and reports back by emitting a status_signal
     '''
 
     # In case the ROS process has finished, is inactive or failed we don't change the status
@@ -263,5 +263,5 @@ class SR2Worker(QObject):
     #if self.proc_pid and self.proc_status == ProcStatus.RUNNING: self.stop()
 
 #    print('PROC_STATUS =', self.proc_status)
-    self.statusSignal.emit(self.proc_status)
+    self.status_signal.emit(self.proc_status)
 

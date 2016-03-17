@@ -25,7 +25,9 @@ from python_qt_binding.QtGui import QStatusBar, QToolBar
 #from python_qt_binding.QtCore import ...
 
 # SR2 widgets
-from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me
+#from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me #### OLD VERSION
+from widgets.sr2_button import SR2Button as sr2b # NEW VERSION using sr2_button.py
+
 
 #########################################################################################################
 #############################TEMPLATE WIDGETS FOR THE SR2 DASHBOARD######################################
@@ -229,7 +231,9 @@ class SR2Dashboard(Dashboard):
           rospy.loginfo('SR2: Found menu entry "%s"' % self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
 
           # Create menu entry
-          entry = sr2me.createWidget(self.context, self._yMenus[menuIdx]['modules'][menu_entryIdx], self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
+          # OLD VERSION
+          #entry = sr2me.createWidget(self.context, self._yMenus[menuIdx]['modules'][menu_entryIdx], self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
+          entry = sr2b.createButton(self.context, self._yMenus[menuIdx]['modules'][menu_entryIdx], self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
           # Append menu entry to menubar
           if entry: widget_curr_menu.append(entry)
 

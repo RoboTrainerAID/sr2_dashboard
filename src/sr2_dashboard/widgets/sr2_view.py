@@ -44,7 +44,7 @@ class SR2MenuEntryViewWidget(QWidget):
   # widgets that are part of the view. If a signle error occurs, the menu entry's icon is set
   # to error status until problem is resolved
   viewFeedbackSignal = pyqtSignal(int)
-  
+
   @pyqtSlot(int, str)
   def getOverallStatus(status, obj_name):
     '''
@@ -60,9 +60,9 @@ class SR2MenuEntryViewWidget(QWidget):
     #      - if a single view component is running and no errors are present in any of the others send viewFeedbackSignal with status RUNNING as value
     #      - if a single view component has failed send viewFeedBackSignal with value FAILED_STOP/FAILED_START (depending on the cause of failure)
     pass
-  
+
   @staticmethod
-  def createWidget(yamlButtonList, name, icons):
+  def createWidget(name, yamlButtonList, icons):
     return SR2MenuEntryViewWidget(yamlButtonList, name, icons)
 
   def __init__(self, yamlButtonList, name, icons):
@@ -73,12 +73,12 @@ class SR2MenuEntryViewWidget(QWidget):
     :param icons: used for all custom widgets (tristate: inactive, running and error)
     '''
     super(SR2MenuEntryViewWidget, self).__init__()
-    
+
     obj_name = name
     self.setObjectName(obj_name)
     self.setWindowTitle(obj_name)
-    
-    
+
+
 
     rospy.loginfo('SR2: Creating view for menu entry "%s"' % name)
 
@@ -111,7 +111,7 @@ class SR2MenuEntryViewWidget(QWidget):
 
     for button in self.buttons:
       self.grid.addWidget(button)
-      
+
   def shutdown(self):
     rospy.loginfo('SR2: Bye!')
 

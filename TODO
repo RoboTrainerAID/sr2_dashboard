@@ -17,5 +17,5 @@ right+center: views (1),2),3))
 8)Add robot_monitor widget as view
 9)Add rqt_graph launcher
 10)Add perspective
-11)Add pose view as view (research what it does)
+11)Add pose view as view --> Add createView that takes a widget as argument and creates a SR2View only with that widget
 12)Add TF tree launcher

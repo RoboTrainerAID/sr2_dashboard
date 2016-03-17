@@ -2,6 +2,9 @@
 # Description: Extracts data from menu_entry or button
 
 import rospy
+import rospkg
+import os
+from rqt_robot_dashboard.util import IconHelper
 
 class IconType():
   inactive = 0
@@ -23,26 +26,27 @@ class IconType():
     icon_helper = IconHelper(paths, name)
 
     icons = []
-    icons_view = []
     res_icons = None
     converted_icons = []
 
     # Add icons
     if with_view:
-      icons_view.append(['status/status_inactive.svg'])         # Inactive
-      icons_view.append(['status/status_running.svg'])          # Active
-      icons_view.append(['status/status_error.svg'])            # Failed
-    else:
       icons.append(['control/menu/diagnostics_inactive.png'])   # Inactive view
       icons.append(['control/menu/diagnostics_running.png'])    # Active view
       icons.append(['control/menu/diagnostics_error.png'])      # Failed
+      rospy.loginfo('Loaded icons for component with view')
+    else:
+      icons.append(['status/status_inactive.svg'])         # Inactive
+      icons.append(['status/status_running.svg'])          # Active
+      icons.append(['status/status_error.svg'])            # Failed
+      rospy.loginfo('Loaded icons for component without view')
 
-    res_icons = list(icons_view if with_view else icons)
-    converted_icons = icon_helper.set_icon_lists(icons_view if with_view else icons)
+    res_icons = list(icons)
+    converted_icons = icon_helper.set_icon_lists(icons)
 
-    converted_clicked_icons = []
+    #converted_clicked_icons = None
 
-    return (converted_icons[0], converted_clicked_icons[0])
+    return (converted_icons[0], res_icons)
 
 class SR2PkgCmdExtractor:
   '''
@@ -67,53 +71,108 @@ class SR2PkgCmdExtractor:
     if not yamlEntry:
       rospy.logwarn('SR2: Empty entry configuration')
       return ('','','', 0)
+
     pkg = ''
     cmd = ''   # Can be rosrun/roslaunch/rosservice call
     args = ''  # Args is the actual ROS node/launch file/etc. we want to start (exception: see "app" case)
-    timeout = 5
+    timeout = 0
 
+    print(yamlEntry)
     #Try each of the possible configurations: node, launch and service
-    try:
+
+    if 'package' in yamlEntry:
+      # We can have either a rosrun or roslaunch
       pkg = yamlEntry['package']
-      rospy.loginfo('SR2: Using package %s' % pkg)
-      try:
-        args = yamlEntry['node']
-        rospy.loginfo('SR2: Nodes detected. Will use "rosrun"')
+      rospy.loginfo('SR2: Found package "%s"', pkg)
+      if 'node' in yamlEntry:
+        # We have a rosrun command
         cmd = 'rosrun'
-
-      except KeyError:
+        args = yamlEntry['node']              # rosrun pkg node
+        rospy.loginfo('SR2: Found rosrun command for node "%s"', args)
+      elif 'launch' in yamlEntry:
+        # We have a roslaunch command
+        cmd = 'roslaunch'
+        args = yamlEntry['launch']            # roslaunch pkg launch_file
+        rospy.loginfo('SR2: Found roslaunch command for launch file "%s"', args)
+      if 'args' in yamlEntry:
+        args1 = yamlEntry['args']       # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...
+        rospy.loginfo('SR2: Found arguments for command "%s"', args1)
+        args = args + args1
+      timeout = 0
+    elif 'service' in yamlEntry:
+      # We have a service
+      args = yamlEntry['service']       # my_service becomes /my_service so that it can easily be combined later on with rosservice call
+      rospy.loginfo('SR2: Found service "%s"', args)
+      args = '/' + args
+      if 'timeout' in yamlEntry:
         try:
-          args = yamlEntry['launch'] + '.launch'
-          rospy.loginfo('SR2: Launch file detected. Will use "roslaunch"')
-          cmd = 'roslaunch'
+          timeout = int(yamlEntry['timeout'])
+          rospy.loginfo('SR2: Found timeout for service: %d', timeout)
+          if not timeout or timeout < 0:
+            rospy.loginfo('SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
+            timeout = 5
+        except:
+          rospy.logwarn('SR2: Found timeout for service but unable to parse it. Falling back to default: 5')
+          timeout = 5
+      else:
+        timeout = 5
+    elif 'app' in yamlEntry:
+      # We have a standalone application
+      cmd = yamlEntry['app']
+      rospy.loginfo('SR2: Found standalone application "%s"', cmd)
+      if 'args' in yamlEntry:
+        args = yamlEntry['args']
+        rospy.loginfo('SR2: Found arguments for standalone application "%s"', args)
+      timeout = 0
+    else:
+      print(yamlEntry)
+      rospy.loginfo('SR2: Unable to parse YAML node')
 
-        except KeyError:
-          try:
-            args = yamlEntry['service']
-            rospy.loginfo('SR2: Service deteceted. Will use "rosservice call"')
-            cmd = 'rosservice call'
-            if 'timeout' in yamlEntry:
-              try:
-                timeout = int(yamlEntry['timeout'])
-              except:
-                rospy.logerr('SR2: Timeout found however not an integer. Falling back to default: 5')
+    return (pkg, cmd, args, timeout)
 
-          except KeyError as exc:
-            rospy.logerr('SR2: Entry does not contain data that can be executed by the supported ROS tools. Add node, launch or service to YAML description')
-            raise exc
-    except KeyError as exc:
-      try:
-        # If finding "package" element inside the entry fails
-        pkg = ''
-        split_str = yamlEntry['app']
-        cmd_raw = split_str.split(' ', 1)
-        if len(cmd_raw) == 1: cmd = cmd_raw[0]
-        else:
-          cmd = cmd_raw[0]
-          args = cmd_raw[1]
-      except:
-        rospy.loginfo('SR2: error while loading YAML file. Missing node, launch, service or app to YAML entry')
-        rospy.loginfo('SR2: full message: \n"%s"' % exc)
-        return ('','','', 0)
+#    try:
+#      pkg = yamlEntry['package']
+#      rospy.loginfo('SR2: Using package %s' % pkg)
+#      try:
+#        args = yamlEntry['node']
+#        rospy.loginfo('SR2: Nodes detected. Will use "rosrun"')
+#        cmd = 'rosrun'
+#
+#      except KeyError:
+#        try:
+#          args = yamlEntry['launch'] + '.launch'
+#          rospy.loginfo('SR2: Launch file detected. Will use "roslaunch"')
+#          cmd = 'roslaunch'
+#
+#        except KeyError:
+#          try:
+#            args = yamlEntry['service']
+#            rospy.loginfo('SR2: Service deteceted. Will use "rosservice call"')
+#            #cmd = 'rosservice call'
+#            if 'timeout' in yamlEntry:
+#              try:
+#                timeout = int(yamlEntry['timeout'])
+#              except:
+#                rospy.logerr('SR2: Timeout found however not an integer. Falling back to default: 5')
+#
+#            return ('', '', args, timeout)
+#
+#          except KeyError as exc:
+#            rospy.logerr('SR2: Entry does not contain data that can be executed by the supported ROS tools. Add node, launch or service to YAML description')
+#            raise exc
+#    except KeyError as exc:
+#      try:
+#        # If finding "package" element inside the entry fails
+#        pkg = ''
+#        split_str = yamlEntry['app']
+#        cmd_raw = split_str.split(' ', 1)
+#        if len(cmd_raw) == 1: cmd = cmd_raw[0]
+#        else:
+#          cmd = cmd_raw[0]
+#          args = cmd_raw[1]
+#      except:
+#        rospy.loginfo('SR2: Error while loading YAML file. Missing node, launch, service or app to YAML entry')
+#        rospy.loginfo('SR2: "%s"' % exc)
+#        return ('','','', 0)
 
-    return (pkg, cmd, args, 0)
+#    return (pkg, cmd, args, 0)

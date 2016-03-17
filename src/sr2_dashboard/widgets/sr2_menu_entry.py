@@ -106,7 +106,6 @@ class SR2MenuEntryWidgetWithView(IconToolButton):
       self.buttons = yamlSR2MenuEntry['menu_entry']['buttons']
     except YAMLError:
       rospy.logwarn('SR2: Detected menu entry with view which does NOT contain any buttons. An empty view will be created instead')
-      return None
 
     # Load icons
     icons = IconType.loadIcons(name, True)
