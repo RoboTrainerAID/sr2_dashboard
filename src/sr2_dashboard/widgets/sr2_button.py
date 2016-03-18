@@ -323,7 +323,7 @@ class SR2ViewButtonExtProcess(QWidget):
     self._status = Status.inactive
     #self.setIcon(self.icons[IconType.inactive])
 
-    # CONNECT BUTTON CLICK EVEN
+    # TODO Connect button and finish copying the code
 #    self.execute_button.connect(self.start)
 #    self.execute_button.connect(self.stop)
 
