@@ -8,8 +8,14 @@ import rospy
 # RQT Robot Dashboard
 from rqt_robot_dashboard.dashboard import Dashboard
 from rqt_robot_dashboard.widgets import MonitorDashWidget, ConsoleDashWidget
+from rqt_robot_dashboard.icon_tool_button import IconToolButton
+from .misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 # RQT Robot Dashboard widgets
 #from rqt_robot_dashboard.widgets import ...
+
+# RQT Plugins
+#from rqt_robot_plugins import rqt_pose_view
+#from rqt_pose_view import PoseViewWidget
 
 # Python
 from yaml import YAMLError
@@ -22,7 +28,7 @@ from yaml import YAMLError
 from python_qt_binding.QtGui import QStatusBar, QToolBar
 
 # QtCore modules
-#from python_qt_binding.QtCore import ...
+from python_qt_binding.QtCore import QMutex, QMutexLocker
 
 # SR2 widgets
 #from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me #### OLD VERSION
@@ -219,7 +225,8 @@ class SR2Dashboard(Dashboard):
     # TODO Find a way to convert rqt_graph, rqt_tf_tree to QWidget
     self.monitor = MonitorDashWidget(self.context)
     self.console = ConsoleDashWidget(self.context, minimal=False)
-    self.widgets.append([self.monitor, self.console])
+#    self.pose_view = SR2PoseView('Pose View', self.context, minimal=False)
+    self.widgets.append([self.monitor, self.console]) #self.pose_view
     try:
       # Iterate through all menus
       for menuIdx in range(0,len(self._yMenus)):
@@ -262,6 +269,49 @@ class SR2Dashboard(Dashboard):
   def save_settings(self, plugin_settings, instance_settings):
     pass
 
+  def restore_settings(self, plugin_settings, instance_settings):
+    pass
+
+# Ported widget from RQT plugins
+class SR2PoseView(IconToolButton):
+  def __init__(self, name, context, minimal=True):
+    icons = IconType.loadIcons(name, with_view=True)
+    super(SR2PoseView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
+
+    self.context = context
+    self.icons = icons[0]
+    self.setStyleSheet('QToolButton {border: none;}')
+
+    self.pose_view = None # Contains the instance of PoseViewWidget
+    self.close_mutex = QMutex()
+    self.toggled = False
+
+  def toggleView(self):
+    if self.pose_view is None:
+      self.pose_view = PoseViewWidget(None) # Curse Plugin argument for the constructor...
+    try:
+      if self.toggled:
+        self.context.remove_widget(self.pose_view)
+        self.toggled = False
+      else:
+        self.context.add_widget(self.pose_view)
+        self.toggled = True
+    except Exception:
+      self.toggled = False
+      self.toggleView()
+
+  def close(self):
+    if self.toggled:
+      with QMutexLocker(self.close_mutex):
+        if self.pose_view:
+          self.pose_view.shutdown()
+          self.pose_view.close()
+          self.pose_view = None
+
+  def save_settings(self, plugin_settings, instance_settings):
+    if self.toggled:
+      self.pose_view.save_settings(self._plugin_settings,
+                            self._instance_settings)
   def restore_settings(self, plugin_settings, instance_settings):
     pass
 
