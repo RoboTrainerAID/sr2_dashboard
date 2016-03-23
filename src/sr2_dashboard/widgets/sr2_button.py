@@ -89,7 +89,7 @@ class SR2Button():
 #        if 'buttons' not in yaml_entry_data['menu_entry']:
 #          rospy.logwarn('SR2: Found view but list of buttons is empty. No toolbar entry and a view associated with it will be created')
 #          return None
-        return SR2ToolbarButtonWithView(name, yaml_entry_data['menu_entry'], context)
+        return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context)
       else:
         rospy.logerr('SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
         return None
@@ -284,21 +284,21 @@ class SR2ViewButtonExtProcess(QWidget):
     self.setWindowTitle('Ext.process "' + self.cmd + '"')
 
     layout = QVBoxLayout(self)
+    layout.setObjectName(name + 'Layout Ext Proc')
 
     controls_layout = QHBoxLayout()
     spacer = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
     controls_layout.addItem(spacer)
-
     self.status_label = QLabel(self)
     self.status_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     self.status_label.setScaledContents(True);
     self.status_label.setToolTip('Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' inactive')
     self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0])) # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
     controls_layout.addWidget(self.status_label)
-    self.execute_button = QPushButton("Execute", self)
+    self.execute_button = QPushButton('Execute', self)
     self.execute_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     controls_layout.addWidget(self.execute_button)
-
+    spacer = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
     controls_layout.addItem(spacer)
     layout.addLayout(controls_layout)
 
@@ -322,6 +322,7 @@ class SR2ViewButtonExtProcess(QWidget):
 
     self.active = False # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
     self._status = Status.inactive
+    
     #self.setIcon(self.icons[IconType.inactive])
 
     # TODO Connect button and finish copying the code
@@ -337,7 +338,10 @@ class SR2ViewButtonExtProcess(QWidget):
     self.resize(layout.sizeHint())
 
   def onResize(self, event):
-    pass
+    # Resize icon of button
+    # OR implement custom button and override paintEvent(event)
+    self.status_label.setIconSize(QSize(self.status_label.width()/2, self.status_label.height()/2))
+    super.onResize(event)
 
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonService  #############################################################
@@ -391,7 +395,7 @@ class SR2ButtonService(IconToolButton):
     self.tooltip = self.name + ' : "' + 'rosservice call' + ' ' + self.args + '"<br/>Reply: --'
     self.setToolTip(self.tooltip)
 
-    self.thread_pool = QThreadPool(self)
+    self.thread_pool = QThreadPool()
     self.service = ServiceRunnable(self.args, self.timeout)
     self.service.setAutoDelete(False)
     self.service.signals.srv_running.connect(self.block)
@@ -469,26 +473,25 @@ class SR2ViewButtonService(QWidget):
     self.name = name
     self.setObjectName(name)
 
-    self.layout = QVBoxLayout(self)
-    self.layout.setObjectName(name+'_layout')
+    layout = QVBoxLayout(self)
+    layout.setObjectName(name+' Layout Service')
 
     controls_layout = QHBoxLayout()
     spacer = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
     controls_layout.addItem(spacer)
-
     self.status_label = QLabel(self)
     self.status_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     self.status_label.setScaledContents(True);
     self.status_label.setToolTip('Service call "' + self.args + '" inactive')
     self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0])) # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
     controls_layout.addWidget(self.status_label)
-    self.service_caller = QPushButton("Call", self)
+    self.service_caller = QPushButton('Call', self)
     self.service_caller.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     controls_layout.addWidget(self.service_caller)
-
-    controls_layout.addItem(spacer)
-    self.layout.addLayout(controls_layout)
-
+    spacer2 = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
+    controls_layout.addItem(spacer2)
+    layout.addLayout(controls_layout)
+    
     info_layout = QVBoxLayout()
     line = QFrame(self)
     line.setFrameShape(QFrame.HLine)
@@ -503,11 +506,11 @@ class SR2ViewButtonService(QWidget):
     self.reply_statL = QLabel('Reply status:', self)
     self.reply_statL.setWordWrap(True)
     info_layout.addWidget(self.reply_statL)
-    self.layout.addLayout(info_layout)
     self.reply_msgL = QLabel('Reply message:', self)
     self.reply_msgL.setWordWrap(True)
     info_layout.addWidget(self.reply_msgL)
-    self.layout.addLayout(info_layout)
+    layout.addLayout(info_layout)
+    
     self.setWindowTitle('Service "' + self.args + '"')
 
     self.thread_pool = QThreadPool(self)
@@ -519,7 +522,8 @@ class SR2ViewButtonService(QWidget):
 
     self.disabled = False
 
-    self.setLayout(self.layout)
+    self.setLayout(layout)
+    self.resize(layout.sizeHint())
 
   def onResize(self, event):
     # Resize icon of button
@@ -537,25 +541,13 @@ class SR2ViewButtonService(QWidget):
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonWithView  ############################################################
 ##############################################################################################################################################
-class SR2ToolbarButtonWithView(IconToolButton):
+class SR2ButtonWithView(IconToolButton):
   '''
   Part of a toolbar; opens a view
   '''
-#  class SR2ViewSingleWidget(QWidget):
-#    def __init__(self, name, widget, parent = None):
-#      super(SR2ToolbarButtonWithView.SR2ViewSingleWidget, self).__init__(parent)
-#      name = name + ' View' + (widget.objectName if widget and widget.objectName else '')
-#      self.setObjectName(name)
-#      self.setWindowTitle(name)
-#
-#      self.layout = QVBoxLayout(self)
-#      widget.setParent(self)
-#      self.layout.addWidget(widget)
-#      self.setLayout(self.layout)
-
   class SR2View(QWidget):
     def __init__(self, name, yaml_button_list):
-      super(SR2ToolbarButtonWithView.SR2View, self).__init__()
+      super(SR2ButtonWithView.SR2View, self).__init__()
 
       name = name + ' View'
       self.setObjectName(name)
@@ -563,9 +555,9 @@ class SR2ToolbarButtonWithView(IconToolButton):
 
       rospy.loginfo('SR2: Creating view for %s', yaml_button_list)
 
-      self.grid = QGridLayout(self)
-      self.grid.setMargin(20)
-      self.grid.setContentsMargins(5,5,5,5)
+      grid = QGridLayout()
+      grid.setMargin(20)
+      grid.setContentsMargins(5,5,5,5)
 
       self.buttons = []
       idx = 0
@@ -574,6 +566,13 @@ class SR2ToolbarButtonWithView(IconToolButton):
         if not button: continue
         self.buttons.append(button)
         idx += 1
+     
+#      self.buttons.append(QLabel('1',self))
+#      self.buttons.append(QLabel('2',self))
+#      self.buttons.append(QLabel('3',self))
+#      self.buttons.append(QLabel('4',self))
+#      self.buttons.append(QLabel('5',self))
+#      self.buttons.append(QLabel('6',self))
 
       # Get dimensions of grid based on number of VALID buttons after the YAML entries have been parsed (or failed to)
       (self.rows, self.cols) = sr2gg.get_dim(len(self.buttons))
@@ -591,12 +590,12 @@ class SR2ToolbarButtonWithView(IconToolButton):
         try:
           # There is a maximum of a single cell-gap (for example for 3 buttons we generate a 2x2 grid with 4 cells one of which would remain empty)
           # that needs to be handle that will cause an exception to be thrown
-          self.grid.addWidget(self.buttons[idx], pos[0], pos[1])
+          grid.addWidget(self.buttons[idx], pos[0], pos[1])
           idx += 1
         except:
           break;
 
-      self.setLayout(self.grid)
+      self.setLayout(grid)
 
     def shutdown(self):
       pass
@@ -610,7 +609,7 @@ class SR2ToolbarButtonWithView(IconToolButton):
   def __init__(self, name, yaml_entry_data, context, surpress_overlays=False, minimal=True):
     # Load icons
     icons = IconType.loadIcons(name, with_view=True)
-    super(SR2ToolbarButtonWithView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
+    super(SR2ButtonWithView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
 
     self.icons = icons[0]
     self.setStyleSheet('QToolButton {border: none;}')
@@ -662,50 +661,17 @@ class SR2ToolbarButtonWithView(IconToolButton):
           self.toggled = True
           self.setIcon(self._icons[IconType.running])
           rospy.loginfo('SR2: Added SR2MenuView "%s"', self.name)
-          self.view_widget = SR2ToolbarButtonWithView.SR2View(self.name, self.yaml_view_buttons)
+          self.view_widget = SR2ButtonWithView.SR2View(self.name, self.yaml_view_buttons)
           # FIXME Random crashes occur here whenever reopening the view but not always after the second try! Sometimes it takes multiple open->close operations to crash the whole application
           # FIXME Crash whenever closing the Dashboard and a view is openened!
           # NOTE Crash IS NOT due to the content of the the SR2View! I have replaced the generated buttons with simple QLabels() and the crash still occurs
-          print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
           print('Created view at %s' % self.view_widget)
           self.context.add_widget(self.view_widget)
-          print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
       except Exception as e:
         if not self.view_widget:
           self.setIcon(self._icons[IconType.error])
           rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
         self.toggled = False
-
-#    with QMutexLocker(self.show_mutex):
-#      try:
-#        if self.toggled:
-#          # If menu entry has a view, remove it
-#          rospy.loginfo('SR2: Hiding SR2MenuView "%s"', self.name)
-#          self.context.remove_widget(self.view_widget)
-##          self.view_widget.close()
-#          self.close()
-##          self.view_widget = None
-#          self.toggled = False
-#          self.setIcon(self._icons[IconType.inactive])
-#        else:
-#          # If menu entry has a view, create it and display it
-#          rospy.loginfo('SR2: Showing SR2MenuView "%s View"', self.name)
-#          #self.view_widget = sr2mev.createWidget(self.name, self.yaml_view_buttons, self.icons)
-#          self.view_widget = SR2ToolbarButtonWithView.SR2View(self.name, self.yaml_view_buttons)
-##          if self._plugin_settings:
-##            self.view_widget.restore_settings(self._plugin_settings,
-##                                              self._instance_settings)
-#
-
-#          self.context.add_widget(self.view_widget)
-#          rospy.loginfo('SR2: Added SR2MenuView "%s"', self.name)
-#          self.toggled = True
-#          self.setIcon(self.icons[IconType.running])
-#      except Exception as e:
-#        if not self.view_widget:
-#          self.setIcon(self.icons[IconType.error])
-#          rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
-#        self.toggled = False
 
   def close(self):
     '''
@@ -716,12 +682,9 @@ class SR2ToolbarButtonWithView(IconToolButton):
 #        if self._plugin_settings:
 #          self.view_widget.save_settings(self._plugin_settings,
 #                                         self._instance_settings)
-#        print('CLOSING VIEW')
         if self.view_widget:
-#          print('View_widget is present!')
           self.view_widget.shutdown()
           self.view_widget.close()
-#          self.context.remove_widget(self.view_widget)
           self.view_widget = None
 
   def save_settings(self, plugin_settings, instance_settings):
