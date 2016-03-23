@@ -9,13 +9,13 @@ import rospy
 from rqt_robot_dashboard.dashboard import Dashboard
 from rqt_robot_dashboard.widgets import MonitorDashWidget, ConsoleDashWidget
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
-from .misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
+#from .misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 # RQT Robot Dashboard widgets
 #from rqt_robot_dashboard.widgets import ...
 
 # RQT Plugins
 #from rqt_robot_plugins import rqt_pose_view
-#from rqt_pose_view import PoseViewWidget
+#from rqt_robot_plugins.rqt_pose_view import PoseViewWidget
 
 # Python
 from yaml import YAMLError
@@ -140,42 +140,6 @@ class TestWidgetSR2MenuEntry(IconToolButton):
 
 # TODO
 # All buttons have to receive feedback of whether the executed process was successful or not (use kill -0 PID to check every N seconds if roslaunch process is running)
-
-
-
-
-# STRUCTURE
-#class SR2DashboardItemFactory:
-#
-#  class SR2MenuEntryWidget(IconToolButton):
-#    '''
-#    Part of a toolbar in the SR2 Dashboard
-#    There are two types of SR2MenuEntryWidgets:
-#      - without SR2MenuViewWidget - this type acts in the same way as SR2ButtonWidget
-#      - with SR2MenuViewWidget - here a SR2MenuViewWidget is attached
-#    '''
-#    def __init__(self, yaml_menu_entry, override_icons, module_name):
-#
-#      pass
-#
-#
-#  class SR2MenuViewWidget(QWidget):
-#    '''
-#    Shows/hides a collection of SR2ButtonWidgets whenever a corresponding SR2MenuEntryWidget is clicked
-#    It is meant to provide a module of SR2ButtonWidgets with similar functionality
-#    '''
-#    pass
-#
-#  class SR2ButtonWidget(QWidget):
-#    '''
-#    Contains a single button for starting/stopping an external process (roslaunch, rosrun or rosservice call (only for Trigger.srv!))
-#    It is part of a SR2MenuViewWidget
-#    '''
-#    pass
-#
-#  @staticmethod
-#  def createMenuEntry(context, yaml_menu_entry, module_name, override_icons=False):
-#    return SR2DashboardItemFactory.SR2MenuEntry(context, yaml_menu_entry, override_icons, module_name) if yaml_menu_entry else None
 
 class SR2Dashboard(Dashboard):
   '''
