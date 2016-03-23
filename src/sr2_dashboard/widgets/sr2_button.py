@@ -567,13 +567,6 @@ class SR2ButtonWithView(IconToolButton):
         self.buttons.append(button)
         idx += 1
      
-#      self.buttons.append(QLabel('1',self))
-#      self.buttons.append(QLabel('2',self))
-#      self.buttons.append(QLabel('3',self))
-#      self.buttons.append(QLabel('4',self))
-#      self.buttons.append(QLabel('5',self))
-#      self.buttons.append(QLabel('6',self))
-
       # Get dimensions of grid based on number of VALID buttons after the YAML entries have been parsed (or failed to)
       (self.rows, self.cols) = sr2gg.get_dim(len(self.buttons))
       rospy.loginfo('SR2: View contains %d buttons which will be distributed on a %d by %d (rows by columns) grid layout' % (len(yaml_button_list), self.rows, self.cols))
@@ -662,9 +655,6 @@ class SR2ButtonWithView(IconToolButton):
           self.setIcon(self._icons[IconType.running])
           rospy.loginfo('SR2: Added SR2MenuView "%s"', self.name)
           self.view_widget = SR2ButtonWithView.SR2View(self.name, self.yaml_view_buttons)
-          # FIXME Random crashes occur here whenever reopening the view but not always after the second try! Sometimes it takes multiple open->close operations to crash the whole application
-          # FIXME Crash whenever closing the Dashboard and a view is openened!
-          # NOTE Crash IS NOT due to the content of the the SR2View! I have replaced the generated buttons with simple QLabels() and the crash still occurs
           print('Created view at %s' % self.view_widget)
           self.context.add_widget(self.view_widget)
       except Exception as e:
