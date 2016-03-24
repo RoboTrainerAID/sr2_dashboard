@@ -15,8 +15,6 @@ from .misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 
 # RQT Plugins
 from rqt_pose_view.pose_view_widget import PoseViewWidget
-#from rqt_robot_plugins import rqt_pose_view
-#from rqt_robot_plugins.rqt_pose_view import PoseViewWidget
 
 # Python
 from yaml import YAMLError
