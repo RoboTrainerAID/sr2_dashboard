@@ -31,7 +31,7 @@ class SR2Worker(QObject):
   It can be used by a menu entry without view and by view's components
   '''
 
-  blockSignal = pyqtSignal()
+  block_signal = pyqtSignal(bool)
   status_signal = pyqtSignal(int)
   recover_signal = pyqtSignal(int) # Emitted if PID file is present and process is running; this signal is used ONLY when starting the application and recovering the state of the UI
 
@@ -166,7 +166,6 @@ class SR2Worker(QObject):
     '''
     Checks if PID for given process can be loaded from PID file
     Based on the success a recovery state is triggered in the owner of this object
-
     '''
     self.proc_pid = self.loadPid(self.proc_path)
     if self.proc_pid and self.checkProcessRunning(): self.proc_status = ProcStatus.RUNNING
@@ -178,6 +177,8 @@ class SR2Worker(QObject):
     Starts a bash script as detached process. The script will then spawn the given ROS process as a child
     process and receive its exit code once it stops. The result will be written inside the PID file .proc
     '''
+    self.block_signal.emit(True) # "Disable" the UI component that controls the worker
+    rospy.loginfo('Blocking UI component')
     # If we have restored the UI or triggered the start slot again while the PID of the bash process and external process are present we can skip the creation of the external processes
     if self.proc_pid:
       rospy.loginfo('SR2: Restoring state of UI component')
@@ -202,6 +203,8 @@ class SR2Worker(QObject):
     else: self.proc_status = ProcStatus.FAILED_START
 
     self.status_signal.emit(self.proc_status)
+    rospy.loginfo('Unblocking UI component')
+    self.block_signal.emit(False)
 
   @pyqtSlot()
   def stop(self):
@@ -210,7 +213,8 @@ class SR2Worker(QObject):
     and cleanup PID file used while the process was alive
     '''
     rospy.loginfo('SR2: Attempting to stop ROS process')
-
+    self.block_signal.emit(True)
+    rospy.loginfo('Blocking UI component')
     # Check if both the bash script and the ROS process are running
     if not self.checkProcessRunning():
       rospy.logwarn('SR2: External process not running so there is nothing to stop')
@@ -239,10 +243,13 @@ class SR2Worker(QObject):
       return
 
     self.proc_status = ProcStatus.FINISHED
-    self.status_signal.emit(self.proc_status)
-
+    
     # Clean up files and directory
     self.cleanup()
+    
+    self.status_signal.emit(self.proc_status)
+    rospy.loginfo('Unblocking UI component')
+    self.block_signal.emit(False)
 
   @pyqtSlot()
   def status(self):

@@ -1,9 +1,6 @@
 # Author: Aleksandar Vladimirov Atanasov
 # Description: A SR2 buttons (for both toolbar and view widgets)
 
-# TODO Finish rewriting all below and integrate with current code base
-
-
 # YAML
 from yaml import YAMLError
 
@@ -25,7 +22,6 @@ from rqt_robot_dashboard.icon_tool_button import IconToolButton
 
 from sr2_monitor_object import SR2Worker, ProcStatus
 from sr2_runnable_object import ServiceRunnable
-from sr2_view import SR2MenuEntryViewWidget as sr2mev
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 
@@ -108,29 +104,6 @@ class SR2Button():
         # External process (roslaunch, rosrun or app)
         return SR2ViewButtonExtProcess(name, cmd, pkg, args)
 
-#    if 'type' in yaml_entry_data:
-#      # We have a toolbar entry
-#      if yaml_entry_data['type'] == 'noview':
-#        # Toolbar entry without view
-#        if timeout > 0:
-#          # Toolbar entry without view; service call
-#          if not args: return None
-#          return SR2ButtonService(name, args, timeout)
-#        else:
-#          # Toolbar entry without view; external app, rosrun or roslaunch
-#          return SR2ButtonExtProcess(name, cmd, pkg, args)
-#      else: return None
-#    else:
-#      rospy.loginfo('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-#      # We have a view entry
-#      if timeout > 0:
-#        # Service call
-#        if not args: return None
-#        return SR2ViewButtonService(name, args, timeout)
-#      else:
-#        # App, roslaunch or rosrun
-#        return SR2ViewButtonExtProcess(name, cmd, pkg, args)
-
 ##############################################################################################################################################
 #########################################################  SR2ButtonExtProcess  ##############################################################
 ##############################################################################################################################################
@@ -161,7 +134,8 @@ class SR2ButtonExtProcess(IconToolButton):
     self.args = args
     self.pkg = pkg
 
-    self.active = False # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
+    self.disabled = False # True when starting/stopping is ongoing else False
+    self.active = False   # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
     self._status = Status.inactive
     self.setIcon(self.icons[IconType.inactive])
 
@@ -206,14 +180,19 @@ class SR2ButtonExtProcess(IconToolButton):
 
     self.worker.status_signal.connect(self.status)
     self.worker.recover_signal.connect(self.recover)
+    self.worker.block_signal.connect(self.block)
 
     self.worker_thread.start()
 
   @pyqtSlot()
   def start(self):
+    '''
+    Attempt to start the external process
+    '''
+    if self.disabled: return
+
     if not self.active:
       rospy.loginfo('SR2: Attempting to start external process')
-      self.active = True
       self._status = Status.running
       self.setIcon(self.icons[IconType.running])
       self.start_signal.emit()
@@ -223,9 +202,20 @@ class SR2ButtonExtProcess(IconToolButton):
     '''
     Attempt to stop the external process
     '''
+    if self.disabled: return
+      
     if self.active:
       rospy.loginfo('SR2: External process stopped')
       self.stop_signal.emit()
+      
+  @pyqtSlot(bool)
+  def block(self, block):
+    '''
+    Blocks the button until the external process is started or stopped
+    It prevents a situation where the external process requires relatively long time to start/stop but the user
+    attempts to click on the button during that time resulting in a faulty state
+    '''
+    self.disabled = block
 
   @pyqtSlot(int)
   def status(self, status):
@@ -245,6 +235,7 @@ class SR2ButtonExtProcess(IconToolButton):
       self.setIcon(self.icons[IconType.error])
 
     if self._status != Status.running: self.active = False
+    else: self.active = True
 
     #self.status_signal.emit(self._status, self.name) # Status is forwarded to the parent widget (view) if the button is part of a view (TODO or to the statusbar)
 
@@ -254,9 +245,7 @@ class SR2ButtonExtProcess(IconToolButton):
     Check if button can recover from a previous state before application was closed/has crashed
     '''
     lock = QMutexLocker(self.mutex_recovery)
-
     self.active = recovery_status
-
 
 ##############################################################################################################################################
 #########################################################  SR2ButtonExtProcess  ##############################################################
@@ -530,14 +519,7 @@ class SR2ViewButtonService(QWidget):
     # OR implement custom button and override paintEvent(event)
     self.service_caller.setIconSize(QSize(self.service_caller.width()/2, self.service_caller.height()/2))
     super.onResize(event)
-
-# TODO Resize status label
-#  def onResize(self, event):
-#    '''
-#    Called whenever a resize event is triggered on the widget. It resizes the icon (if present) inside the button
-#    '''
-#    if self.icons != None: self.service_caller.setIconSize(QSize(self.service_caller.width()/2, self.service_caller.height()/2))
-
+    
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonWithView  ############################################################
 ##############################################################################################################################################
