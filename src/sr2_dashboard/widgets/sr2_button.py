@@ -20,7 +20,7 @@ from rqt_robot_dashboard.util import IconHelper
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 #from rqt_robot_dashboard.widgets import ...
 
-from sr2_monitor_object import SR2Worker, ProcStatus
+from sr2_monitor_object import SR2Worker, SR2Worker_v2, ProcStatus
 from sr2_runnable_object import ServiceRunnable
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
@@ -47,22 +47,10 @@ class SR2Button():
     '''
     if not yaml_entry_data: return None
 
-    # Parse the yaml_entry_data and if possible return the respective widget
-#    if 'type' in yaml_entry_data and yaml_entry_data['type'] == 'view':
-#      # Toolbar entry with view
-#        rospy.loginfo('\n----------------------------------\n\tCREATE VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
-#        return SR2ToolbarButtonWithView(name, yaml_entry_data, context)
-
     pkg = ''
     cmd = ''
     args = ''
     timeout = 0
-#    try:
-#      # For noview buttons
-#      pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data['menu_entry'])
-#    except KeyError:
-#      # For view buttons
-#      pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
 
     if 'type' in yaml_entry_data:
       # We have an entry that is part of the toolbar
@@ -82,9 +70,6 @@ class SR2Button():
       elif yaml_entry_data['type'] == 'view':
         # View
         rospy.loginfo('\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
-#        if 'buttons' not in yaml_entry_data['menu_entry']:
-#          rospy.logwarn('SR2: Found view but list of buttons is empty. No toolbar entry and a view associated with it will be created')
-#          return None
         return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context)
       else:
         rospy.logerr('SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
@@ -203,11 +188,11 @@ class SR2ButtonExtProcess(IconToolButton):
     Attempt to stop the external process
     '''
     if self.disabled: return
-      
+
     if self.active:
       rospy.loginfo('SR2: External process stopped')
       self.stop_signal.emit()
-      
+
   @pyqtSlot(bool)
   def block(self, block):
     '''
@@ -253,7 +238,10 @@ class SR2ButtonExtProcess(IconToolButton):
 class SR2ViewButtonExtProcess(QWidget):
   '''
   '''
-  # TODO
+  start_signal = pyqtSignal()
+  stop_signal = pyqtSignal()
+  clear_error_signal = pyqtSignal()
+
   def __init__(self, name, cmd, pkg, args):
     _icons = IconType.loadIcons(name)
     super(SR2ViewButtonExtProcess, self).__init__()
@@ -309,28 +297,123 @@ class SR2ViewButtonExtProcess(QWidget):
       info_layout.addWidget(argsL)
     layout.addLayout(info_layout)
 
-    self.active = False # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
-    self._status = Status.inactive
-    
-    #self.setIcon(self.icons[IconType.inactive])
-
-    # TODO Connect button and finish copying the code
-#    self.execute_button.connect(self.start)
-#    self.execute_button.connect(self.stop)
+    self.statusOkay = True # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
+    self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
+#    self._status = Status.inactive
+    self.toggleControl = False
 
     self.mutex_recovery = QMutex()
     self.mutex_status = QMutex()
 
-    # createWorker()
+    self.createWorker()
+    self.execute_button.clicked.connect(self.toggle)
 
     self.setLayout(layout)
     self.resize(layout.sizeHint())
+
+    self.destroyed.connect(self.stop_thread)
+
+  def __del__(self):
+    if(self.worker_thread.isRunning()):
+      self.worker_thread.exit()
+      while(not self.worker_thread.isFinished()):
+        pass
 
   def onResize(self, event):
     # Resize icon of button
     # OR implement custom button and override paintEvent(event)
     self.status_label.setIconSize(QSize(self.status_label.width()/2, self.status_label.height()/2))
     super.onResize(event)
+
+  def createWorker(self):
+    '''
+    Creates a worker (controls and monitors an external process), timer (worker reprots to the UI every 1s) and a thread (holds both the worker and timer)
+    '''
+    # Create worker and connect the UI to it
+    self.worker = SR2Worker_v2()
+    self.worker.statusChanged_signal.connect(self.statusChangedReceived)
+    self.worker.block_signal.connect(self.block)
+    self.start_signal.connect(self.worker.start)
+    self.stop_signal.connect(self.worker.stop)
+    self.clear_error_signal.connect(self.worker.clear_error)
+
+    # Create a timer which will trigger the status slot of the worker every 1s (the status slot sends back status updates to the UI (see statusChangedReceived(self, status) slot))
+    self.timer = QTimer()
+    self.timer.setInterval(1000)
+    self.timer.timeout.connect(self.worker.status)
+
+    # Create a thread that will hold the worker object and the timer
+    self.worker_thread = QThread(self)
+    self.worker_thread.finished.connect(self.worker.deleteLater)
+    self.worker_thread.finished.connect(self.timer.deleteLater)
+    self.worker_thread.started.connect(self.timer.start)
+
+    # Move the worker and timer to the thread...
+    self.worker.moveToThread(self.worker_thread)
+    self.timer.moveToThread(self.worker_thread)
+
+    # ...and start it
+    self.worker_thread.start()
+
+  @pyqtSlot(int)
+  def statusChangedReceived(self, status):
+    '''
+    Update the UI based on the status of the running process
+    :param status - status of the process started and monitored by the worker
+    Following values for status are possible:
+      - INACTIVE/FINISHED - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
+      - RUNNING - if process is started successfully visual indicator
+      - FAILED_START - occurrs if the attempt to start the process has failed
+      - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
+    '''
+    print('Status has changed to:')
+    if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
+      self.execute_button.setDisabled(False)
+      print('INACTIVE/FINISHED')
+    elif status == ProcStatus.RUNNING:
+#      self.execute_button.setDisabled(False)
+      print('RUNNING')
+      self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
+      self.execute_button.setDisabled(True)
+    elif status == ProcStatus.FAILED_START:
+      print('FAILED_START')
+      self.execute_button.setDisabled(False)
+      self.statusOkay = False
+    elif status == ProcStatus.FAILED_STOP:
+      print('FAILED_STOP')
+      self.execute_button.setDisabled(False)
+      self.statusOkay = False
+
+  @pyqtSlot(bool)
+  def block(self, block_flag):
+    '''
+    Enable/Disable the button which starts/stops the external process
+    This slot is used for preventing the user to interact with the UI while starting/stopping the external process after a start/stop procedure has been initiated
+    After the respective procedure has been completed the button will be enabled again
+    :param block_flag - enable/disable flag for the button
+    '''
+    self.execute_button.setDisabled(block_flag)
+
+  @pyqtSlot()
+  def toggle(self):
+    '''
+    Handles the start, stopping and error confirmation triggered by the button
+      - statusOkay is False - this occurs ONLY if the process status is an error (FAILED_START or FAILED_STOP)
+                                 In this case the user has to click twice on the button in order to reinitiate the starting procedure
+      - both statusOkay and toggleControl are True - attempt to start the process
+      - statusOkay is True but toggleControl is False - attempt to stop the process
+    '''
+    if not self.statusOkay:
+      self.statusOkay = True
+      print('Error acknowledged')
+      self.clear_error_signal.emit()
+
+    self.toggleControl = not self.toggleControl
+    if self.toggleControl:
+      self.start_signal.emit()
+      self.execute_button.setDisabled(bool)
+    else:
+      self.stop_signal.emit()
 
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonService  #############################################################
@@ -480,7 +563,7 @@ class SR2ViewButtonService(QWidget):
     spacer2 = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
     controls_layout.addItem(spacer2)
     layout.addLayout(controls_layout)
-    
+
     info_layout = QVBoxLayout()
     line = QFrame(self)
     line.setFrameShape(QFrame.HLine)
@@ -499,7 +582,7 @@ class SR2ViewButtonService(QWidget):
     self.reply_msgL.setWordWrap(True)
     info_layout.addWidget(self.reply_msgL)
     layout.addLayout(info_layout)
-    
+
     self.setWindowTitle('Service "' + self.args + '"')
 
     self.thread_pool = QThreadPool(self)
@@ -519,7 +602,7 @@ class SR2ViewButtonService(QWidget):
     # OR implement custom button and override paintEvent(event)
     self.service_caller.setIconSize(QSize(self.service_caller.width()/2, self.service_caller.height()/2))
     super.onResize(event)
-    
+
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonWithView  ############################################################
 ##############################################################################################################################################
@@ -548,7 +631,7 @@ class SR2ButtonWithView(IconToolButton):
         if not button: continue
         self.buttons.append(button)
         idx += 1
-     
+
       # Get dimensions of grid based on number of VALID buttons after the YAML entries have been parsed (or failed to)
       (self.rows, self.cols) = sr2gg.get_dim(len(self.buttons))
       rospy.loginfo('SR2: View contains %d buttons which will be distributed on a %d by %d (rows by columns) grid layout' % (len(yaml_button_list), self.rows, self.cols))

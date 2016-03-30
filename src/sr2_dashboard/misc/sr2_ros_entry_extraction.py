@@ -87,12 +87,12 @@ class SR2PkgCmdExtractor:
       if 'node' in yamlEntry:
         # We have a rosrun command
         cmd = 'rosrun'
-        args = yamlEntry['node']              # rosrun pkg node
+        args = yamlEntry['node']        # rosrun pkg node
         rospy.loginfo('SR2: Found rosrun command for node "%s"', args)
       elif 'launch' in yamlEntry:
         # We have a roslaunch command
         cmd = 'roslaunch'
-        args = yamlEntry['launch']            # roslaunch pkg launch_file
+        args = yamlEntry['launch']      # roslaunch pkg launch_file
         rospy.loginfo('SR2: Found roslaunch command for launch file "%s"', args)
       if 'args' in yamlEntry:
         args1 = yamlEntry['args']       # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...

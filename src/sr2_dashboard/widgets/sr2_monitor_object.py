@@ -24,6 +24,10 @@ class ProcStatus():
 
 # Note: Errors will remain visible until use doesn't confirm the error (menu entry or view button will remain toggled until then)
 
+class SR2Worker_v2(QObject):
+  # TODO
+  pass
+
 class SR2Worker(QObject):
   '''
   Launches a bash script as detached process which spawns a given ROS process and also receives the process' exit code
@@ -132,7 +136,7 @@ class SR2Worker(QObject):
 
   def checkProcessRunning(self):
     '''
-    Using self.checkPid() it checks whether the process is running or not
+    Invokes checkPid() in order to check whether the process is running or not including cleanup afterwards
     '''
     proc_running = self.checkPid(self.proc_pid)
 
@@ -192,6 +196,7 @@ class SR2Worker(QObject):
 
     print('**************************************** CMD: %s | ARGS: %s' % (self.cmd, str(self.args)))
     self.proc_status, self.proc_pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
+    QThread.sleep(10)
     print('**************************************** STATUS: %s | PID: %d' % (('True' if self.proc_status else 'False'), self.proc_pid))
 
     # Check if process has started properly
@@ -243,10 +248,10 @@ class SR2Worker(QObject):
       return
 
     self.proc_status = ProcStatus.FINISHED
-    
+
     # Clean up files and directory
     self.cleanup()
-    
+
     self.status_signal.emit(self.proc_status)
     rospy.loginfo('Unblocking UI component')
     self.block_signal.emit(False)

@@ -12,8 +12,17 @@ dashboard:
             package: "lt"
             node: "talker.py"
             args: "" # Optional
-
         # module 2
+        - name: "INIT"
+          type: "noview"
+          #init: True # TODO Add enable/disable for all toolbar top-level entries through an INIT property (can be a single one and only a top-level toolbar entry without a view)
+                      #      This property makes the entry critical for the rest of the entries meaning that until it is started or if it fails at some point all started processes will be killed
+          menu_entry:
+            package: "cob_bringup"
+            launch: "robot" # Fall back to support for a single launch file (easier to maintain when it comes to the PID files)
+            args: "" # Optional
+
+        # module 3
         - name: "CoB Bringup"
           type: "view"
           # menu entry 2 in menu 1
@@ -23,19 +32,15 @@ dashboard:
             - service: "trigger_srv"
               timeout: 10
             # button 2
-            - package: "cob_bringup"
-              launch: "robot" # Fall back to support for a single launch file (easier to maintain when it comes to the PID files)
-              args: "" # Optional
+            - package: "lt"
+              launch: "talker"
             # button 3
             - package: "lt"
               launch: "talker"
-            # button 4
-            - package: "lt"
-              launch: "talker"
               args: "" # Optional
-            # button 5
+            # button 4
             - service: "trigger_srv"
-            # button 6
+            # button 5
             - service: "trigger_srv"
 
     # menu 2
