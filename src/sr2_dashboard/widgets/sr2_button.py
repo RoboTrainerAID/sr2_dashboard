@@ -365,7 +365,7 @@ class SR2ViewButtonExtProcess(QWidget):
       - FAILED_START - occurrs if the attempt to start the process has failed
       - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
     '''
-    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
+#    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
       rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
       self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
