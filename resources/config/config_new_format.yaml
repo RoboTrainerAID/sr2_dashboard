@@ -11,7 +11,7 @@ dashboard:
           menu_entry: # describes what the entry will launch (a process or a view)
             package: "lt"
             node: "talker.py"
-            args: "" # Optional
+            #args: "some options" # Optional
         # module 2
         - name: "INIT"
           type: "noview"
@@ -20,7 +20,7 @@ dashboard:
           menu_entry:
             package: "cob_bringup"
             launch: "robot" # Fall back to support for a single launch file (easier to maintain when it comes to the PID files)
-            args: "" # Optional
+            #args: "some options" # Optional
 
         # module 3
         - name: "CoB Bringup"
@@ -28,19 +28,16 @@ dashboard:
           # menu entry 2 in menu 1
           menu_entry:
             # Buttons for view toggled by menu entry 2 in menu 1
-            # button1
+            # button 1
             - service: "trigger_srv"
               timeout: 10
             # button 2
             - package: "lt"
               launch: "talker"
+              #args: "some options" # Optional
             # button 3
-            - package: "lt"
-              launch: "talker"
-              args: "" # Optional
-            # button 4
             - service: "trigger_srv"
-            # button 5
+            # button 4
             - service: "trigger_srv"
 
     # menu 2
@@ -65,7 +62,7 @@ dashboard:
             # service -> execute a 'rosservice call' command (currently only Trigger services are supported; initial states is always set to False)
             # app -> execute a standalone application ('rqt_graph', 'rqt_tf_tree' etc.(non-ROS applications are also supported!))
             node: "listener.py"
-            args: ""
+            #args: "some options" # Optional
 
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
@@ -85,7 +82,6 @@ dashboard:
           menu_entry:
             package: "testing"
             node: "trigger_srv_server.py"
-            args: ""
 
     # menu 3
     - modules:
@@ -97,7 +93,6 @@ dashboard:
           menu_entry: #rqt_graph, rqt_console
             app: "rqt_graph" # Arguments can be included inside the string; all arguments have to be separated by the command by a space
                              # Example: "firefox -new-tab www.google.com" will be split into: cmd="firefox" and args="-new-tab www.google.com
-            args: ""
         # module 6
         - name: "Firefox Google"
           type: "noview"

@@ -77,7 +77,7 @@ class SR2PkgCmdExtractor:
     args = ''  # Args is the actual ROS node/launch file/etc. we want to start (exception: see "app" case)
     timeout = 0
 
-    print(yamlEntry)
+#    print(yamlEntry)
     #Try each of the possible configurations: node, launch and service
 
     if 'package' in yamlEntry:
@@ -93,6 +93,8 @@ class SR2PkgCmdExtractor:
         # We have a roslaunch command
         cmd = 'roslaunch'
         args = yamlEntry['launch']      # roslaunch pkg launch_file
+        if '.launch' not in args:
+          args += '.launch'
         rospy.loginfo('SR2: Found roslaunch command for launch file "%s"', args)
       if 'args' in yamlEntry:
         args1 = yamlEntry['args']       # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...
@@ -129,50 +131,3 @@ class SR2PkgCmdExtractor:
       rospy.loginfo('SR2: Unable to parse YAML node')
 
     return (pkg, cmd, args, timeout)
-
-#    try:
-#      pkg = yamlEntry['package']
-#      rospy.loginfo('SR2: Using package %s' % pkg)
-#      try:
-#        args = yamlEntry['node']
-#        rospy.loginfo('SR2: Nodes detected. Will use "rosrun"')
-#        cmd = 'rosrun'
-#
-#      except KeyError:
-#        try:
-#          args = yamlEntry['launch'] + '.launch'
-#          rospy.loginfo('SR2: Launch file detected. Will use "roslaunch"')
-#          cmd = 'roslaunch'
-#
-#        except KeyError:
-#          try:
-#            args = yamlEntry['service']
-#            rospy.loginfo('SR2: Service deteceted. Will use "rosservice call"')
-#            #cmd = 'rosservice call'
-#            if 'timeout' in yamlEntry:
-#              try:
-#                timeout = int(yamlEntry['timeout'])
-#              except:
-#                rospy.logerr('SR2: Timeout found however not an integer. Falling back to default: 5')
-#
-#            return ('', '', args, timeout)
-#
-#          except KeyError as exc:
-#            rospy.logerr('SR2: Entry does not contain data that can be executed by the supported ROS tools. Add node, launch or service to YAML description')
-#            raise exc
-#    except KeyError as exc:
-#      try:
-#        # If finding "package" element inside the entry fails
-#        pkg = ''
-#        split_str = yamlEntry['app']
-#        cmd_raw = split_str.split(' ', 1)
-#        if len(cmd_raw) == 1: cmd = cmd_raw[0]
-#        else:
-#          cmd = cmd_raw[0]
-#          args = cmd_raw[1]
-#      except:
-#        rospy.loginfo('SR2: Error while loading YAML file. Missing node, launch, service or app to YAML entry')
-#        rospy.loginfo('SR2: "%s"' % exc)
-#        return ('','','', 0)
-
-#    return (pkg, cmd, args, 0)

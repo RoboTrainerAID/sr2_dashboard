@@ -20,7 +20,7 @@ from rqt_robot_dashboard.util import IconHelper
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 #from rqt_robot_dashboard.widgets import ...
 
-from sr2_monitor_object import SR2Worker, SR2Worker_v2, ProcStatus
+from sr2_monitor_object import SR2Worker_v2, ProcStatus#, SR2Worker
 from sr2_runnable_object import ServiceRunnable
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
@@ -54,8 +54,8 @@ class SR2Button():
 
     if 'type' in yaml_entry_data:
       # We have an entry that is part of the toolbar
-      pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data['menu_entry'])
       if yaml_entry_data['type'] == 'noview':
+        pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data['menu_entry'])
         if (not cmd and not pkg and not args and not timeout): return None
         rospy.loginfo('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
         if timeout:
@@ -96,8 +96,6 @@ class SR2ButtonExtProcess(IconToolButton):
   '''
   Part of a toolbar; launches an external application, provides status feedback while monitoring for that application and the ability to stop it
   '''
-
-  #statusSignal = pyqtSignal(int, str) # status, name
   start_signal = pyqtSignal()
   stop_signal = pyqtSignal()
 
@@ -130,6 +128,7 @@ class SR2ButtonExtProcess(IconToolButton):
     self.mutex_recovery = QMutex()
     self.mutex_status = QMutex()
 
+    self.worker_thread = QThread()
     self.createWorker()
 
   def createWorker(self):
@@ -140,13 +139,11 @@ class SR2ButtonExtProcess(IconToolButton):
       - Timer - used for triggering a lot inside the SR2 Worker that sends back information about the status of the external process
     '''
     self.worker = None
-    if self.pkg: self.worker = SR2Worker(self.cmd, self.pkg, self.args)
-    else: self.worker = SR2Worker(cmd=self.cmd, pkg=None, args=self.args)
+    if self.pkg: self.worker = SR2Worker_v2(self.cmd, self.pkg, self.args)
+    else: self.worker = SR2Worker_v2(cmd=self.cmd, pkg=None, args=self.args)
 
     self.timer = QTimer()
     self.timer.setInterval(1000)
-
-    self.worker_thread = QThread()
 
     self.worker.moveToThread(self.worker_thread)
     self.timer.moveToThread(self.worker_thread)
@@ -163,8 +160,7 @@ class SR2ButtonExtProcess(IconToolButton):
 
     self.timer.timeout.connect(self.worker.status)
 
-    self.worker.status_signal.connect(self.status)
-    self.worker.recover_signal.connect(self.recover)
+    self.worker.statusChanged_signal.connect(self.status)
     self.worker.block_signal.connect(self.block)
 
     self.worker_thread.start()
@@ -174,13 +170,14 @@ class SR2ButtonExtProcess(IconToolButton):
     '''
     Attempt to start the external process
     '''
-    if self.disabled: return
-
-    if not self.active:
-      rospy.loginfo('SR2: Attempting to start external process')
-      self._status = Status.running
-      self.setIcon(self.icons[IconType.running])
-      self.start_signal.emit()
+    pass
+#    if self.disabled: return
+#
+#    if not self.active:
+#      rospy.loginfo('SR2: Attempting to start external process')
+#      self._status = Status.running
+#      self.setIcon(self.icons[IconType.running])
+#      self.start_signal.emit()
 
   @pyqtSlot()
   def stop(self):
@@ -207,30 +204,27 @@ class SR2ButtonExtProcess(IconToolButton):
     '''
     Receive status from the worker based on the state of the external process this button represents
     '''
-    lock = QMutexLocker(self.mutex_status)
+    pass
+#    lock = QMutexLocker(self.mutex_status)
+#
+#    if status == ProcStatus.RUNNING:
+#      self._status = Status.running
+#      self.setIcon(self.icons[IconType.running])
+#    elif status in [ProcStatus.FINISHED, ProcStatus.INACTIVE]:
+#      self._status = Status.inactive
+#      self.setIcon(self.icons[IconType.inactive])
+#    elif status in [ProcStatus.FAILED_START, ProcStatus.FAILED_STOP]:
+#      self._status = Status.error
+#      self.setIcon(self.icons[IconType.error])
+#
+#    if self._status != Status.running: self.active = False
+#    else: self.active = True
 
-    if status == ProcStatus.RUNNING:
-      self._status = Status.running
-      self.setIcon(self.icons[IconType.running])
-    elif status in [ProcStatus.FINISHED, ProcStatus.INACTIVE]:
-      self._status = Status.inactive
-      self.setIcon(self.icons[IconType.inactive])
-    elif status in [ProcStatus.FAILED_START, ProcStatus.FAILED_STOP]:
-      self._status = Status.error
-      self.setIcon(self.icons[IconType.error])
-
-    if self._status != Status.running: self.active = False
-    else: self.active = True
-
-    #self.status_signal.emit(self._status, self.name) # Status is forwarded to the parent widget (view) if the button is part of a view (TODO or to the statusbar)
-
-  @pyqtSlot(bool)
-  def recover(self, recovery_status):
-    '''
-    Check if button can recover from a previous state before application was closed/has crashed
-    '''
-    lock = QMutexLocker(self.mutex_recovery)
-    self.active = recovery_status
+  def __del__(self):
+    if(self.worker_thread.isRunning()):
+      self.worker_thread.exit()
+      while(not self.worker_thread.isFinished()):
+        pass
 
 ##############################################################################################################################################
 #########################################################  SR2ButtonExtProcess  ##############################################################
@@ -299,27 +293,22 @@ class SR2ViewButtonExtProcess(QWidget):
 
     self.statusOkay = True # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
     self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
-#    self._status = Status.inactive
     self.toggleControl = False
 
     self.mutex_recovery = QMutex()
     self.mutex_status = QMutex()
 
+    self.worker_thread = QThread()
     self.createWorker()
     self.execute_button.clicked.connect(self.toggle)
 
     self.setLayout(layout)
     self.resize(layout.sizeHint())
 
-    self.destroyed.connect(self.stop_thread)
-
-  def __del__(self):
-    if(self.worker_thread.isRunning()):
-      self.worker_thread.exit()
-      while(not self.worker_thread.isFinished()):
-        pass
-
   def onResize(self, event):
+    '''
+    Resize icon in label based on size of parent widget
+    '''
     # Resize icon of button
     # OR implement custom button and override paintEvent(event)
     self.status_label.setIconSize(QSize(self.status_label.width()/2, self.status_label.height()/2))
@@ -330,7 +319,10 @@ class SR2ViewButtonExtProcess(QWidget):
     Creates a worker (controls and monitors an external process), timer (worker reprots to the UI every 1s) and a thread (holds both the worker and timer)
     '''
     # Create worker and connect the UI to it
-    self.worker = SR2Worker_v2()
+    self.worker = None
+    if self.pkg: self.worker = SR2Worker_v2(self.cmd, self.pkg, self.args)
+    else: self.worker = SR2Worker_v2(cmd=self.cmd, pkg=None, args=self.args)
+    self.worker.recover()
     self.worker.statusChanged_signal.connect(self.statusChangedReceived)
     self.worker.block_signal.connect(self.block)
     self.start_signal.connect(self.worker.start)
@@ -342,8 +334,7 @@ class SR2ViewButtonExtProcess(QWidget):
     self.timer.setInterval(1000)
     self.timer.timeout.connect(self.worker.status)
 
-    # Create a thread that will hold the worker object and the timer
-    self.worker_thread = QThread(self)
+    # Connect the thread to the worker and timer
     self.worker_thread.finished.connect(self.worker.deleteLater)
     self.worker_thread.finished.connect(self.timer.deleteLater)
     self.worker_thread.started.connect(self.timer.start)
@@ -352,8 +343,17 @@ class SR2ViewButtonExtProcess(QWidget):
     self.worker.moveToThread(self.worker_thread)
     self.timer.moveToThread(self.worker_thread)
 
-    # ...and start it
+    # Start the thread
     self.worker_thread.start()
+
+
+  def __del__(self):
+    if(self.worker_thread.isRunning()):
+      self.worker_thread.exit()
+      while(not self.worker_thread.isFinished()):
+        pass
+
+  recovery = 0
 
   @pyqtSlot(int)
   def statusChangedReceived(self, status):
@@ -366,22 +366,31 @@ class SR2ViewButtonExtProcess(QWidget):
       - FAILED_START - occurrs if the attempt to start the process has failed
       - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
     '''
-    print('Status has changed to:')
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
+      rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
+      self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
       self.execute_button.setDisabled(False)
-      print('INACTIVE/FINISHED')
+      self.execute_button.setText('Execute')
     elif status == ProcStatus.RUNNING:
-#      self.execute_button.setDisabled(False)
-      print('RUNNING')
+      if not self.recovery:
+        print('RRRRRRRRRRRRRRRRRRRRRRRRRRRr')
+        self.recovery = 1
+      rospy.loginfo('SR2: Status has changed to: RUNNING')
+      self.active = True
       self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
-      self.execute_button.setDisabled(True)
+#      self.execute_button.setDisabled(True)
+      self.execute_button.setText('Stop')
     elif status == ProcStatus.FAILED_START:
-      print('FAILED_START')
+      rospy.logerr('SR2: Status has changed to: FAILED_START')
       self.execute_button.setDisabled(False)
+      self.status_label.setPixmap(self.icons[IconType.error].pixmap(self.icons[IconType.error].availableSizes()[0]))
+      self.execute_button.setText('Confirm')
       self.statusOkay = False
     elif status == ProcStatus.FAILED_STOP:
-      print('FAILED_STOP')
+      rospy.logerr('SR2: Status has changed to: FAILED_STOP')
       self.execute_button.setDisabled(False)
+      self.status_label.setPixmap(self.icons[IconType.error].pixmap(self.icons[IconType.error].availableSizes()[0]))
+      self.execute_button.setText('Confirm')
       self.statusOkay = False
 
   @pyqtSlot(bool)
@@ -404,16 +413,15 @@ class SR2ViewButtonExtProcess(QWidget):
       - statusOkay is True but toggleControl is False - attempt to stop the process
     '''
     if not self.statusOkay:
+      # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
       self.statusOkay = True
       print('Error acknowledged')
       self.clear_error_signal.emit()
+      return
 
     self.toggleControl = not self.toggleControl
-    if self.toggleControl:
-      self.start_signal.emit()
-      self.execute_button.setDisabled(bool)
-    else:
-      self.stop_signal.emit()
+    if self.toggleControl: self.start_signal.emit()
+    else: self.stop_signal.emit()
 
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonService  #############################################################
@@ -536,7 +544,6 @@ class SR2ViewButtonService(QWidget):
   def __init__(self, name, args, timeout):
     super(SR2ViewButtonService, self).__init__()
 
-    # TODO Fix UI
     _icons = IconType.loadIcons(name)
     self.icons = _icons[0]
 
@@ -713,19 +720,19 @@ class SR2ButtonWithView(IconToolButton):
           self.context.remove_widget(self.view_widget)
           self.close()
           self.setIcon(self._icons[IconType.inactive])
-          rospy.loginfo('SR2: Closed SR2MenuView "%s"', self.name)
+          rospy.loginfo('SR2: Closed SR2View "%s"', self.name)
         else:
           # If menu entry doesn't display a view, create it and display it
           self.toggled = True
           self.setIcon(self._icons[IconType.running])
-          rospy.loginfo('SR2: Added SR2MenuView "%s"', self.name)
+          rospy.loginfo('SR2: Added SR2View "%s"', self.name)
           self.view_widget = SR2ButtonWithView.SR2View(self.name, self.yaml_view_buttons)
           print('Created view at %s' % self.view_widget)
           self.context.add_widget(self.view_widget)
       except Exception as e:
         if not self.view_widget:
           self.setIcon(self._icons[IconType.error])
-          rospy.logerr('SR2: Error during showing SR2MenuView : %s', e.message)
+          rospy.logerr('SR2: Error during showing SR2View : %s', e.message)
         self.toggled = False
 
   def close(self):
