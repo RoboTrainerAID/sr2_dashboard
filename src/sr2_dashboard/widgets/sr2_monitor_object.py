@@ -1,6 +1,6 @@
 # Author: Aleksandar Vladimirov Atanasov
 # Description: Infrastructure for executing external processes, controlling and monitoring these
-from time import sleep
+
 from os import kill, remove, stat, error, path
 from exceptions import IOError
 from signal import SIGINT
@@ -19,9 +19,8 @@ class ProcStatus():
   FINISHED      = 3      # The process has exited succesfully (exit code == 0)
   FAILED_STOP   = 4      # The process has failed to exit properly (exit code != 0) or the clean up of the files associated with the process has failed
 
-# Note: Errors will remain visible until use doesn't confirm the error (menu entry or view button will remain toggled until then)
-
 class SR2Worker_v2(QObject):
+  recover_signal = pyqtSignal()
   statusChanged_signal = pyqtSignal(int)
   block_signal = pyqtSignal(bool)
 
@@ -45,12 +44,14 @@ class SR2Worker_v2(QObject):
     self.path = self.dir_name + '/pid_' + cmd + (pkg if pkg else '') + (args if args else '')
     self.path = self.path.replace('=','').replace('.','').replace(' ','').replace(':','').replace('~','')
 
+  @pyqtSlot()
   def recover(self):
     # Attempt recovery
     self.pid = self.loadPid()
     if self.pid:
       rospy.logwarn('SR2: Process with PID %d already running. Will connect to it', self.pid)
       self.active = True
+      self.recover_signal.emit()
       self.setStatus(ProcStatus.RUNNING)
     else: rospy.loginfo('SR2: Unable to recover previous state')
 
@@ -60,7 +61,7 @@ class SR2Worker_v2(QObject):
     rospy.loginfo('SR2: Attempting to start ')
     if not self.active and not self.pid:
       self.active, self.pid = QProcess.startDetached(self.cmd, self.args, self.dir_name)
-      sleep(5)
+      QThread.sleep(5)
 
       # Check if launching the external process was successful
       if not self.active or not self.pid:
@@ -81,8 +82,9 @@ class SR2Worker_v2(QObject):
     if self.active and self.pid:
         try:
           kill(self.pid, SIGINT)
-          sleep(5)
+          QThread.sleep(5)
         except OSError:
+          print('stop() FAILED_STOP')
           self.setStatus(ProcStatus.FAILED_STOP)
           rospy.logerr('SR2: Sending SIGINT to given PID %d failed', self.pid)
 
@@ -94,12 +96,11 @@ class SR2Worker_v2(QObject):
 
   @pyqtSlot()
   def status(self):
-    print('XXXXXXXXXXXX Timer called status slot START XXXXXXXXXXXXXX')
-    print('active=%s | pid=%s' % (str(self.active), str(self.pid)))
-    print('XXXXXXXXXXXX Timer called status slot END XXXXXXXXXXXXXX')
+    print(' --- worker thread ID: %d ---' % QThread.currentThreadId())
     if self.active and self.pid:
       running = self.checkProcessRunning(self.pid)
       if not running:
+        print('status() FAILED_STOP')
         self.setStatus(ProcStatus.FAILED_STOP)
         self.cleanup()
         self.active = False
@@ -180,29 +181,18 @@ class SR2Worker_v2(QObject):
     '''
     Returns a PID stored in a valid file _path; else returns None
     '''
-    print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 1')
     if self.checkPidFileExists() and not self.isPidFileEmpty():
-      print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 2')
       with open(self.path, 'r') as pidFile:
-        print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 3')
         pid = int(pidFile.readline())
-        if not pid:
-          print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 4')
-          return None
+        if not pid: return None
         else:
-          print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 5')
           pid_running = self.checkPid(pid)
           if not pid_running:
-            print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 6.1')
             # Delete PID file if the contained PID is invalid (represents a process that isn't currently running)
             remove(self.path)
             return None
-          else:
-            print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 6.2')
-            return pid
-    else:
-      print('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ LOAD PID 7')
-      return None
+          else: return pid
+    else: return None
 
   def checkProcessRunning(self, pid):
     '''
@@ -224,7 +214,9 @@ class SR2Worker_v2(QObject):
     '''
     Removes all files related to the external process: .proc, .bash and root directory containing these two files
     '''
-    try: remove(self.path)
+    try:
+      if self.checkPidFileExists(): remove(self.path)
+      else: rospy.loginfo('SR2: No PID file found. Nothing to cleanup')
     except: rospy.logerr('SR2: Failed to delete PID file')
 
 ##########################################################################################

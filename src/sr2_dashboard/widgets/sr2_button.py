@@ -6,7 +6,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-from python_qt_binding.QtGui import QToolButton, QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame
+from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
 #from PyQt4.QtSvg import QSvgRenderer # TODO Add support for SVG for the icons and pixmaps: http://stackoverflow.com/a/35138314/1559401 | http://www.qtcentre.org/threads/7321-Loading-SVG-icons
@@ -14,9 +14,7 @@ from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqt
 import roslib
 roslib.load_manifest('sr2_dashboard')
 import rospy
-import rospkg
 # ROS-related  modules: RQT Robot Dashboard
-from rqt_robot_dashboard.util import IconHelper
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 #from rqt_robot_dashboard.widgets import ...
 
@@ -297,7 +295,7 @@ class SR2ViewButtonExtProcess(QWidget):
 
     self.mutex_recovery = QMutex()
     self.mutex_status = QMutex()
-
+    
     self.worker_thread = QThread()
     self.createWorker()
     self.execute_button.clicked.connect(self.toggle)
@@ -322,9 +320,11 @@ class SR2ViewButtonExtProcess(QWidget):
     self.worker = None
     if self.pkg: self.worker = SR2Worker_v2(self.cmd, self.pkg, self.args)
     else: self.worker = SR2Worker_v2(cmd=self.cmd, pkg=None, args=self.args)
-    self.worker.recover()
+#    self.worker.recover()
+    QTimer.singleShot(1, self.worker.recover)
     self.worker.statusChanged_signal.connect(self.statusChangedReceived)
     self.worker.block_signal.connect(self.block)
+    self.worker.recover_signal.connect(self.recover)
     self.start_signal.connect(self.worker.start)
     self.stop_signal.connect(self.worker.stop)
     self.clear_error_signal.connect(self.worker.clear_error)
@@ -353,7 +353,6 @@ class SR2ViewButtonExtProcess(QWidget):
       while(not self.worker_thread.isFinished()):
         pass
 
-  recovery = 0
 
   @pyqtSlot(int)
   def statusChangedReceived(self, status):
@@ -366,32 +365,33 @@ class SR2ViewButtonExtProcess(QWidget):
       - FAILED_START - occurrs if the attempt to start the process has failed
       - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
     '''
+    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
       rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
       self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
-      self.execute_button.setDisabled(False)
+#      self.execute_button.setDisabled(False)
       self.execute_button.setText('Execute')
+      self.active = False
     elif status == ProcStatus.RUNNING:
-      if not self.recovery:
-        print('RRRRRRRRRRRRRRRRRRRRRRRRRRRr')
-        self.recovery = 1
       rospy.loginfo('SR2: Status has changed to: RUNNING')
-      self.active = True
       self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
-#      self.execute_button.setDisabled(True)
+#      self.execute_button.setDisabled(False)
       self.execute_button.setText('Stop')
+      self.active = True
     elif status == ProcStatus.FAILED_START:
       rospy.logerr('SR2: Status has changed to: FAILED_START')
-      self.execute_button.setDisabled(False)
+#      self.execute_button.setDisabled(False)
       self.status_label.setPixmap(self.icons[IconType.error].pixmap(self.icons[IconType.error].availableSizes()[0]))
       self.execute_button.setText('Confirm')
       self.statusOkay = False
+      self.active = True
     elif status == ProcStatus.FAILED_STOP:
       rospy.logerr('SR2: Status has changed to: FAILED_STOP')
-      self.execute_button.setDisabled(False)
+#      self.execute_button.setDisabled(False)
       self.status_label.setPixmap(self.icons[IconType.error].pixmap(self.icons[IconType.error].availableSizes()[0]))
       self.execute_button.setText('Confirm')
       self.statusOkay = False
+      self.active = True
 
   @pyqtSlot(bool)
   def block(self, block_flag):
@@ -422,6 +422,12 @@ class SR2ViewButtonExtProcess(QWidget):
     self.toggleControl = not self.toggleControl
     if self.toggleControl: self.start_signal.emit()
     else: self.stop_signal.emit()
+    
+  @pyqtSlot()
+  def recover(self):
+    self.toggleControl = True
+    self.active = True
+    self.statusOkay = True
 
 ##############################################################################################################################################
 ######################################################  SR2ToolbarButtonService  #############################################################
