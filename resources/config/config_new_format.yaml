@@ -39,6 +39,14 @@ dashboard:
             - service: "trigger_srv"
             # button 4
             - service: "trigger_srv"
+            # button 5
+            - service: "trigger_srv"
+            # button 6
+            - package: "lt"
+              launch: "listener"
+              #args: "some options" # Optional
+            # button 7
+            - service: "trigger_srv"
 
     # menu 2
     - modules:

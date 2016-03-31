@@ -79,6 +79,7 @@ class SR2Worker_v2(QObject):
   pyqtSlot()
   def stop(self):
     self.block_signal.emit(True)
+    print('STOP START')
     if self.active and self.pid:
         try:
           kill(self.pid, SIGINT)
@@ -93,15 +94,16 @@ class SR2Worker_v2(QObject):
     self.pid = None
     self.setStatus(ProcStatus.FINISHED)
     self.block_signal.emit(False)
+    print('STOP END')
 
   @pyqtSlot()
   def status(self):
-    print(' --- worker thread ID: %d ---' % QThread.currentThreadId())
+#    print(' --- worker thread ID: %d ---' % QThread.currentThreadId())
     if self.active and self.pid:
       running = self.checkProcessRunning(self.pid)
       if not running:
         print('status() FAILED_STOP')
-        self.setStatus(ProcStatus.FAILED_STOP)
+#        self.setStatus(ProcStatus.FAILED_STOP)
         self.cleanup()
         self.active = False
         self.pid = None
