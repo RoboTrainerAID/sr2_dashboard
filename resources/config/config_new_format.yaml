@@ -81,7 +81,7 @@ dashboard:
           # menu entry 2 in menu 2
           menu_entry:
             service: "trigger_srv"
-            timeout: 20 # In seconds | determines how long the application will wait for the specified service to be available
+            timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
 
         # module 5
         - name: "Launch Trigger Service Server"

@@ -19,13 +19,13 @@ class ProcStatus():
   FINISHED      = 3      # The process has exited succesfully (exit code == 0)
   FAILED_STOP   = 4      # The process has failed to exit properly (exit code != 0) or the clean up of the files associated with the process has failed
 
-class SR2Worker_v2(QObject):
+class SR2Worker(QObject):
   recover_signal = pyqtSignal()
   statusChanged_signal = pyqtSignal(int)
   block_signal = pyqtSignal(bool)
 
   def __init__(self, cmd, pkg, args=None):
-    super(SR2Worker_v2, self).__init__()
+    super(SR2Worker, self).__init__()
 
     if not cmd: return
     if not cmd and not pkg and not args: return
@@ -43,9 +43,18 @@ class SR2Worker_v2(QObject):
     self.dir_name = '/tmp'
     self.path = self.dir_name + '/pid_' + cmd + (pkg if pkg else '') + (args if args else '')
     self.path = self.path.replace('=','').replace('.','').replace(' ','').replace(':','').replace('~','')
+  
+  def __del__(self):
+    if self._status != ProcStatus.RUNNING:
+      rospy.loginfo('SR2: External process not running. Will delete reserved (empty) PID file')
+      self.cleanup()
 
   @pyqtSlot()
   def recover(self):
+    '''
+    At the beginning the worker attemps to load a PID that was previously stored in the PID file for the given command (and arguments if present)
+    If the attempt succeeds, the UI receives a RUNNING status and the worker regains control over the external process
+    '''
     # Attempt recovery
     self.pid = self.loadPid()
     if self.pid:
@@ -76,16 +85,14 @@ class SR2Worker_v2(QObject):
 
     self.block_signal.emit(False)
 
-  pyqtSlot()
+  @pyqtSlot()
   def stop(self):
     self.block_signal.emit(True)
-    print('STOP START')
     if self.active and self.pid:
         try:
           kill(self.pid, SIGINT)
           QThread.sleep(5)
         except OSError:
-          print('stop() FAILED_STOP')
           self.setStatus(ProcStatus.FAILED_STOP)
           rospy.logerr('SR2: Sending SIGINT to given PID %d failed', self.pid)
 
@@ -102,8 +109,8 @@ class SR2Worker_v2(QObject):
     if self.active and self.pid:
       running = self.checkProcessRunning(self.pid)
       if not running:
-        print('status() FAILED_STOP')
-#        self.setStatus(ProcStatus.FAILED_STOP)
+        # This case occurs if the started external process has crashed or was stopped with other mean outside the dashboard
+        self.setStatus(ProcStatus.FAILED_STOP)
         self.cleanup()
         self.active = False
         self.pid = None
@@ -118,7 +125,6 @@ class SR2Worker_v2(QObject):
     return self._status
 
   def setStatus(self, status):
-    print('old_status(%d) ? new_status(%d)' % (self._status, status))
     if self._status == status: return
     self._status = status
     self.statusChanged_signal.emit(self._status)

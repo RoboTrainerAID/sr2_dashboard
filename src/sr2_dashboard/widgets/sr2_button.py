@@ -18,7 +18,7 @@ import rospy
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 #from rqt_robot_dashboard.widgets import ...
 
-from sr2_monitor_object import SR2Worker_v2, ProcStatus#, SR2Worker
+from sr2_monitor_object import SR2Worker, ProcStatus
 from sr2_runnable_object import ServiceRunnable
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
@@ -137,8 +137,8 @@ class SR2ButtonExtProcess(IconToolButton):
       - Timer - used for triggering a lot inside the SR2 Worker that sends back information about the status of the external process
     '''
     self.worker = None
-    if self.pkg: self.worker = SR2Worker_v2(self.cmd, self.pkg, self.args)
-    else: self.worker = SR2Worker_v2(cmd=self.cmd, pkg=None, args=self.args)
+    if self.pkg: self.worker = SR2Worker(self.cmd, self.pkg, self.args)
+    else: self.worker = SR2Worker(cmd=self.cmd, pkg=None, args=self.args)
 
     self.timer = QTimer()
     self.timer.setInterval(1000)
@@ -265,6 +265,7 @@ class SR2ViewButtonExtProcess(QWidget):
     self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0])) # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
     controls_layout.addWidget(self.status_label)
     self.execute_button = QPushButton('Execute', self)
+#    self.execute_button.setStyleSheet('border-width: 1px;')
     self.execute_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     controls_layout.addWidget(self.execute_button)
     spacer = QSpacerItem(40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -318,8 +319,8 @@ class SR2ViewButtonExtProcess(QWidget):
     '''
     # Create worker and connect the UI to it
     self.worker = None
-    if self.pkg: self.worker = SR2Worker_v2(self.cmd, self.pkg, self.args)
-    else: self.worker = SR2Worker_v2(cmd=self.cmd, pkg=None, args=self.args)
+    if self.pkg: self.worker = SR2Worker(self.cmd, self.pkg, self.args)
+    else: self.worker = SR2Worker(cmd=self.cmd, pkg=None, args=self.args)
 #    self.worker.recover()
     QTimer.singleShot(1, self.worker.recover)
     self.worker.statusChanged_signal.connect(self.statusChangedReceived)
@@ -385,6 +386,7 @@ class SR2ViewButtonExtProcess(QWidget):
       self.execute_button.setText('Confirm')
       self.statusOkay = False
       self.active = True
+      self.toggleControl = False
     elif status == ProcStatus.FAILED_STOP:
       rospy.logerr('SR2: Status has changed to: FAILED_STOP')
 #      self.execute_button.setDisabled(False)
@@ -392,6 +394,7 @@ class SR2ViewButtonExtProcess(QWidget):
       self.execute_button.setText('Confirm')
       self.statusOkay = False
       self.active = True
+      self.toggleControl = False
 
   @pyqtSlot(bool)
   def block(self, block_flag):
@@ -415,7 +418,7 @@ class SR2ViewButtonExtProcess(QWidget):
     if not self.statusOkay:
       # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
       self.statusOkay = True
-      print('Error acknowledged')
+      rospy.loginfo('SR2: Error acknowledged')
       self.clear_error_signal.emit()
       return
 
@@ -436,32 +439,6 @@ class SR2ButtonService(IconToolButton):
   '''
   Part of a toolbar; initiates a service call and reports back once service has replied or timeout
   '''
-  @pyqtSlot()
-  def call(self):
-    if not self.disabled:
-      rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d', self.args, int(QThread.currentThreadId()), self.timeout)
-      self.thread_pool.start(self.service)
-    else:
-      rospy.loginfo('SR2: Service call is currently being processed. Please wait...')
-      self.setIcon(self.icons[IconType.running])
-      self.disabled = True
-
-  @pyqtSlot(bool)
-  def block(self, state):
-    if state: self.setIcon(self.icons[IconType.running])
-    self.disabled = state
-
-  @pyqtSlot(int, str)
-  def reply(self, status, msg):
-    if status in [ServiceRunnable.CallStatus.SUCCESS_TRUE, ServiceRunnable.CallStatus.SUCCESS_FALSE]:
-      self.setIcon(self.icons[IconType.inactive])
-      rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
-    else:
-      self.setIcon(self.icons[IconType.error])
-      rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"', self.args, int(QThread.currentThreadId()), msg)
-
-    self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Reply: ' + msg
-
   def __init__(self, name, args, timeout, minimal=True):
     # Load icons
     _icons = IconType.loadIcons(name)
@@ -489,6 +466,34 @@ class SR2ButtonService(IconToolButton):
     self.clicked.connect(self.call)
 
     self.disabled = False
+    
+  @pyqtSlot()
+  def call(self):
+    if not self.disabled:
+      rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d', self.args, int(QThread.currentThreadId()), self.timeout)
+      self.thread_pool.start(self.service)
+    else:
+      rospy.loginfo('SR2: Service call is currently being processed. Please wait...')
+      self.setIcon(self.icons[IconType.running])
+      self.disabled = True
+
+  @pyqtSlot(bool)
+  def block(self, state):
+    if state: self.setIcon(self.icons[IconType.running])
+    self.disabled = state
+
+  @pyqtSlot(int, str)
+  def reply(self, status, msg):
+    if status in [ServiceRunnable.CallStatus.SUCCESS_TRUE, ServiceRunnable.CallStatus.SUCCESS_FALSE]:
+      self.setIcon(self.icons[IconType.inactive])
+      rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
+    else:
+      self.setIcon(self.icons[IconType.error])
+      rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"', self.args, int(QThread.currentThreadId()), msg)
+
+    self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Reply: ' + msg
+    self.setToolTip(self.tooltip)
+
 
 ##############################################################################################################################################
 ##########################################################  SR2ViewButtonService  ############################################################
@@ -505,7 +510,7 @@ class SR2ViewButtonService(QWidget):
     if not self.disabled:
       self.reply_statL.setText('Reply status:')
       self.reply_msgL.setText('Reply message:')
-      rospy.loginfo('SR2: Calling service %s from thread %d with timeout %d', self.args, int(QThread.currentThreadId()), self.timeout)
+      rospy.loginfo('SR2: Calling service %s with timeout %d', self.args, self.timeout)
       self.thread_pool.start(self.service)
     else:
       rospy.loginfo('SR2: Service call is currently being processed. Please wait...')
@@ -535,12 +540,12 @@ class SR2ViewButtonService(QWidget):
     if status in [ServiceRunnable.CallStatus.SUCCESS_TRUE, ServiceRunnable.CallStatus.SUCCESS_FALSE]:
       #self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
       self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
-      rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
+      rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"', self.args, ('True' if not status else 'False'), msg)
       self.reply_statL.setText('Reply status: ' + ('True' if status == ServiceRunnable.CallStatus.SUCCESS_TRUE else 'False'))
       self.reply_msgL.setText('Reply message: ' + msg)
     else:
       self.status_label.setPixmap(self.icons[IconType.error].pixmap(self.icons[IconType.error].availableSizes()[0]))
-      rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"', self.args, int(QThread.currentThreadId()), msg)
+      rospy.logerr('SR2: Calling service %s failed due to "%s"', self.args, msg)
       self.reply_statL.setText('Reply status: <font color=\"red\">Error</font>')
       self.reply_msgL.setText('Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
 
