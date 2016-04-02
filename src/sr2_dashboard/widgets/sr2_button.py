@@ -70,7 +70,7 @@ class SR2Button():
           return SR2ButtonExtProcess(name, cmd, pkg, args, parent)
       elif yaml_entry_data['type'] == 'view':
         # View
-        rospy.loginfo('\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
+        rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
         return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context)
       else:
         rospy.logerr('SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
@@ -482,7 +482,7 @@ class SR2ButtonService(IconToolButton):
     self.timeout = timeout
     self.args = args  # Args contains the Trigger service that we want to call
 
-    rospy.loginfo('\n----------------------------------\n\tSERVICE\n\t@Name: %s\n\t@Args: %s\n\t@Timeout: %d\n----------------------------------', name, args, timeout)
+    rospy.logdebug('\n----------------------------------\n\tSERVICE\n\t@Name: %s\n\t@Args: %s\n\t@Timeout: %d\n----------------------------------', name, args, timeout)
 
     self.setIcon(self.icons[IconType.inactive])
     self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
@@ -667,7 +667,7 @@ class SR2ButtonWithView(IconToolButton):
       self.setObjectName(name)
       self.setWindowTitle(name)
 
-      rospy.loginfo('SR2: Creating view for %s', yaml_button_list)
+      rospy.logdebug('SR2: Creating view for %s', yaml_button_list)
 
       grid = QGridLayout()
       grid.setMargin(20)
@@ -683,7 +683,7 @@ class SR2ButtonWithView(IconToolButton):
 
       # Get dimensions of grid based on number of VALID buttons after the YAML entries have been parsed (or failed to)
       (self.rows, self.cols) = sr2gg.get_dim(len(self.buttons))
-      rospy.loginfo('SR2: View contains %d buttons which will be distributed on a %d by %d (rows by columns) grid layout' % (len(yaml_button_list), self.rows, self.cols))
+      rospy.logdebug('SR2: View contains %d buttons which will be distributed on a %d by %d (rows by columns) grid layout' % (len(yaml_button_list), self.rows, self.cols))
 
 #      for button in self.buttons:
 #        self.grid.addWidget(button)
@@ -758,18 +758,17 @@ class SR2ButtonWithView(IconToolButton):
         if self.toggled:
           # If menu entry is already displaying a view, remove it
           self.toggled = False
-          print('Deleted view at %s' % self.view_widget)
           self.context.remove_widget(self.view_widget)
           self.close()
           self.setIcon(self._icons[IconType.inactive])
-          rospy.loginfo('SR2: Closed SR2View "%s"', self.name)
+          rospy.logdebug('SR2: Closed SR2View "%s"', self.name)
         else:
           # If menu entry doesn't display a view, create it and display it
           self.toggled = True
           self.setIcon(self._icons[IconType.running])
-          rospy.loginfo('SR2: Added SR2View "%s"', self.name)
+          rospy.logdebug('SR2: Added SR2View "%s"', self.name)
           self.view_widget = SR2ButtonWithView.SR2View(self.name, self.yaml_view_buttons)
-          print('Created view at %s' % self.view_widget)
+
           self.context.add_widget(self.view_widget)
       except Exception as e:
         if not self.view_widget:

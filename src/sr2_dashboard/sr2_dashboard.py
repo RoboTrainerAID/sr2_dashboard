@@ -172,9 +172,9 @@ class SR2Dashboard(Dashboard):
     self._yMenus = rospy.get_param('/sr2_dashboard/dashboard/menus')
 
 
-    if len(self._yMenus) > 0: rospy.loginfo('SR2: Found %d menus' % len(self._yMenus))
+    if len(self._yMenus) > 0: rospy.logdebug('SR2: Found %d menus' % len(self._yMenus))
     else:
-      rospy.loginfo('SR2: No menus found! Dashboard will be empty')
+      rospy.logwarn('SR2: No menus found! Dashboard will be empty')
       return
 
     # Populate the self.widgets list
@@ -193,12 +193,12 @@ class SR2Dashboard(Dashboard):
     try:
       # Iterate through all menus
       for menuIdx in range(0,len(self._yMenus)):
-        rospy.loginfo('SR2: Found menu with %d entries' % len(self._yMenus[menuIdx]['modules']))
+        rospy.logdebug('SR2: Found menu with %d entries' % len(self._yMenus[menuIdx]['modules']))
         widget_curr_menu = [] # Contains all SR2MenuEntry objects for the currently parsed menu X
 
         # Iterate through all modules of the current menu
         for menu_entryIdx in range(0, len(self._yMenus[menuIdx]['modules'])):
-          rospy.loginfo('SR2: Found menu entry "%s"' % self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
+          rospy.logdebug('SR2: Found menu entry "%s"' % self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
 
           # Create menu entry
           # OLD VERSION
@@ -211,8 +211,7 @@ class SR2Dashboard(Dashboard):
         self.widgets.append(widget_curr_menu)
 
     except YAMLError as exc:
-      rospy.loginfo('SR2: error while loading YAML file.')
-      rospy.loginfo('SR2: full message: \n"%s"' % exc)
+      rospy.logerr('SR2: error while loading YAML file.\nFull error message: %s', exc)
 
   def get_widgets(self):
     '''
@@ -241,7 +240,6 @@ class SR2PoseView(IconToolButton):
     icons = IconType.loadIcons(name, with_view=True)
     super(SR2PoseView, self).__init__(name, icons=icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
 
-    print('PoseView')
     self.context = context
     self.icons = icons[0]
     self.setStyleSheet('QToolButton {border: none;}')
@@ -260,12 +258,12 @@ class SR2PoseView(IconToolButton):
       self.pose_view = PoseViewWidget(None) # Curse Plugin argument for the constructor...
     try:
       if self.toggled:
-        print('PoseView hide')
+        rospy.logdebug('PoseView hide')
         self.context.remove_widget(self.pose_view)
         self.close()
         self.toggled = False
       else:
-        print('PoseView show')
+        rospy.logdebug('PoseView show')
         self.context.add_widget(self.pose_view)
         self.toggled = True
     except Exception:

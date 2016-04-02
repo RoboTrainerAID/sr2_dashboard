@@ -34,12 +34,12 @@ class IconType():
       icons.append(['control/menu/diagnostics_inactive.png'])   # Inactive view
       icons.append(['control/menu/diagnostics_running.png'])    # Active view
       icons.append(['control/menu/diagnostics_error.png'])      # Failed
-      rospy.loginfo('Loaded icons for component with view')
+      rospy.logdebug('SR2: Loaded icons for component with view')
     else:
       icons.append(['status/status_inactive.svg'])         # Inactive
       icons.append(['status/status_running.svg'])          # Active
       icons.append(['status/status_error.svg'])            # Failed
-      rospy.loginfo('Loaded icons for component without view')
+      rospy.logdebug('SR2: Loaded icons for component without view')
 
     res_icons = list(icons)
     converted_icons = icon_helper.set_icon_lists(icons)
@@ -83,35 +83,35 @@ class SR2PkgCmdExtractor:
     if 'package' in yamlEntry:
       # We can have either a rosrun or roslaunch
       pkg = yamlEntry['package']
-      rospy.loginfo('SR2: Found package "%s"', pkg)
+      rospy.logdebug('SR2: Found package "%s"', pkg)
       if 'node' in yamlEntry:
         # We have a rosrun command
         cmd = 'rosrun'
         args = yamlEntry['node']        # rosrun pkg node
-        rospy.loginfo('SR2: Found rosrun command for node "%s"', args)
+        rospy.logdebug('SR2: Found rosrun command for node "%s"', args)
       elif 'launch' in yamlEntry:
         # We have a roslaunch command
         cmd = 'roslaunch'
         args = yamlEntry['launch']      # roslaunch pkg launch_file
         if '.launch' not in args:
           args += '.launch'
-        rospy.loginfo('SR2: Found roslaunch command for launch file "%s"', args)
+        rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', args)
       if 'args' in yamlEntry:
         args1 = yamlEntry['args']       # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...
-        rospy.loginfo('SR2: Found arguments for command "%s"', args1)
+        rospy.logdebug('SR2: Found arguments for command "%s"', args1)
         args = args + args1
       timeout = 0
     elif 'service' in yamlEntry:
       # We have a service
       args = yamlEntry['service']       # my_service becomes /my_service so that it can easily be combined later on with rosservice call
-      rospy.loginfo('SR2: Found service "%s"', args)
+      rospy.logdebug('SR2: Found service "%s"', args)
       args = '/' + args
       if 'timeout' in yamlEntry:
         try:
           timeout = int(yamlEntry['timeout'])
-          rospy.loginfo('SR2: Found timeout for service: %d', timeout)
+          rospy.logdebug('SR2: Found timeout for service: %d', timeout)
           if not timeout or timeout < 0:
-            rospy.loginfo('SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
+            rospy.logwarn('SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
             timeout = 5
         except:
           rospy.logwarn('SR2: Found timeout for service but unable to parse it. Falling back to default: 5')
@@ -121,13 +121,12 @@ class SR2PkgCmdExtractor:
     elif 'app' in yamlEntry:
       # We have a standalone application
       cmd = yamlEntry['app']
-      rospy.loginfo('SR2: Found standalone application "%s"', cmd)
+      rospy.logdebug('SR2: Found standalone application "%s"', cmd)
       if 'args' in yamlEntry:
         args = yamlEntry['args']
-        rospy.loginfo('SR2: Found arguments for standalone application "%s"', args)
+        rospy.logdebug('SR2: Found arguments for standalone application "%s"', args)
       timeout = 0
     else:
-      print(yamlEntry)
-      rospy.loginfo('SR2: Unable to parse YAML node')
+      rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
 
     return (pkg, cmd, args, timeout)
