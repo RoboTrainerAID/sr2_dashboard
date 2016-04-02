@@ -58,7 +58,7 @@ class SR2Button():
       if yaml_entry_data['type'] == 'noview':
         pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data['menu_entry'])
         if (not cmd and not pkg and not args and not timeout): return None
-        rospy.loginfo('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
+        rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
         if timeout:
           # Service
           if not args:
@@ -79,7 +79,7 @@ class SR2Button():
       # We have an entry that is part of a view
       pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
       if (not cmd and not pkg and not args and not timeout): return None
-      rospy.loginfo('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
+      rospy.logdebug('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
       if timeout:
         # Service
         if not args:
@@ -105,7 +105,7 @@ class SR2ButtonExtProcess(IconToolButton):
     _icons = IconType.loadIcons(name)
     super(SR2ButtonExtProcess, self).__init__(name, icons=_icons[1], icon_paths=[['sr2_dashboard', 'resources/images']])
 
-    rospy.loginfo('\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+    rospy.logdebug('\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
 
     self.minimal = minimal
     self.setObjectName(name)
@@ -269,7 +269,7 @@ class SR2ViewButtonExtProcess(QWidget):
     _icons = IconType.loadIcons(name)
     super(SR2ViewButtonExtProcess, self).__init__(parent)
 
-    rospy.loginfo('\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+    rospy.logdebug('\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
 
     self.setObjectName(name)
     self.name = name

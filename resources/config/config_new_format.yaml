@@ -1,16 +1,16 @@
 dashboard:
   menus:
-    - init: # Critical component representing an external process that is crucial
-            # for the proper working of the whole system. Until it is running the
-            # rest of the toolbar components are disabled
-            # In case it is terminated/crashes the rest of the toolbar components will be disabled
-            # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
-        name: "Initialization"
-        type: "noview"
-        menu_entry:
-          package: "cob_bringup"
-          launch: "robot"
-          #args: "some options" # Optional
+#    - init: # Critical component representing an external process that is crucial
+#            # for the proper working of the whole system. Until it is running the
+#            # rest of the toolbar components are disabled
+#            # In case it is terminated/crashes the rest of the toolbar components will be disabled
+#            # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
+#        name: "Initialization"
+#        type: "noview"
+#        menu_entry:
+#          package: "cob_bringup"
+#          launch: "robot"
+#          #args: "some options" # Optional
 
     # All menus are part of the toolbar. Each menu contains one or multiple modules (menu entry + menu view) and is separated from the others by a separator "|"
     # menu 1
