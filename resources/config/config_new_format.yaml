@@ -1,5 +1,17 @@
 dashboard:
   menus:
+    - init: # Critical component representing an external process that is crucial
+            # for the proper working of the whole system. Until it is running the
+            # rest of the toolbar components are disabled
+            # In case it is terminated/crashes the rest of the toolbar components will be disabled
+            # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
+        name: "Initialization"
+        type: "noview"
+        menu_entry:
+          package: "cob_bringup"
+          launch: "robot"
+          #args: "some options" # Optional
+
     # All menus are part of the toolbar. Each menu contains one or multiple modules (menu entry + menu view) and is separated from the others by a separator "|"
     # menu 1
     - modules:
@@ -12,17 +24,8 @@ dashboard:
             package: "lt"
             node: "talker.py"
             #args: "some options" # Optional
-        # module 2
-        - name: "INIT"
-          type: "noview"
-          #init: True # TODO Add enable/disable for all toolbar top-level entries through an INIT property (can be a single one and only a top-level toolbar entry without a view)
-                      #      This property makes the entry critical for the rest of the entries meaning that until it is started or if it fails at some point all started processes will be killed
-          menu_entry:
-            package: "cob_bringup"
-            launch: "robot" # Fall back to support for a single launch file (easier to maintain when it comes to the PID files)
-            #args: "some options" # Optional
 
-        # module 3
+        # module 2
         - name: "CoB Bringup"
           type: "view"
           # menu entry 2 in menu 1
@@ -108,6 +111,12 @@ dashboard:
           menu_entry:
             app: "firefox"
             args: "-new-window www.google.com"
+        # module 7
+        - name: "Editor"
+          type: "noview"
+          # menu entry 1 in menu 3
+          menu_entry:
+            app: "mousepad"
 
 
 ###############################################################################################################################################
