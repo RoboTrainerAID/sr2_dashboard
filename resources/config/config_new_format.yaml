@@ -51,6 +51,8 @@ dashboard:
               #args: "some options" # Optional
             # button 7
             - service: "trigger_srv"
+            - service: "trigger_srv"
+            - service: "trigger_srv"
 
     # menu 2
     - modules:

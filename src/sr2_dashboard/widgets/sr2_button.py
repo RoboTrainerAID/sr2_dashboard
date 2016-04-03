@@ -235,6 +235,9 @@ class SR2ButtonExtProcess(IconToolButton):
     
   @pyqtSlot(bool)
   def block_override(self, block_override_flag):
+    '''
+    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+    '''
     self.init_block_enabled = block_override_flag
 
   @pyqtSlot()
@@ -263,6 +266,9 @@ class SR2ButtonExtProcess(IconToolButton):
     
   @pyqtSlot()
   def recover(self):
+    '''
+    Sets button in an active mode. Triggered only if recovery of external process was successful
+    '''
     self.toggleControl = True
     self.active = True
     self.statusOkay = True
@@ -272,12 +278,16 @@ class SR2ButtonExtProcess(IconToolButton):
 ##############################################################################################################################################
     
 class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
+  '''
+  Part of a toolbar; gives the ability to start/stop and monitor an external process (roslaunch, rosrun or standalone application)
+  Represents the init YAML entry used for adding a single critical external process which can enable/disable all other entries (currently view-entries are not supported)
+  '''
 
   block_override = pyqtSignal(bool)  # Connect this to 
   
   def __init__(self, name, cmd, pkg, args, parent=None, surpress_overlays=False, minimal=True):
     super(SR2ButtonInitExtProcess, self).__init__(name, cmd, pkg, args, parent, surpress_overlays, minimal)
-    rospy.loginfo('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+    rospy.logdebug('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
     self.init_block_enabled = False
     # TODO Add block override to all toolbar buttons
     # The block override will override the blocking from the workers of these buttons based on the enable-state of the INIT button
@@ -287,6 +297,18 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
     
   @pyqtSlot(int)
   def statusChangedReceived(self, status):
+    '''
+    Update the UI based on the status of the running process
+    :param status - status of the process started and monitored by the worker
+    Following values for status are possible:
+      - INACTIVE/FINISHED - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
+      - RUNNING - if process is started successfully visual indicator
+      - FAILED_START - occurrs if the attempt to start the process has failed
+      - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
+      
+    In case the init external process isn't running a blocking signal is sent to all components connected to this button in order to disable the interaction with them
+    The interaction with other connected buttons is disable until the init external process isn't running again
+    '''
     super(SR2ButtonInitExtProcess, self).statusChangedReceived(status)
     if status != ProcStatus.RUNNING:
       rospy.logerr('SR2: Init ext.process stopped running')
@@ -297,6 +319,10 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
     
   @pyqtSlot()
   def recover(self):
+    '''
+    Sets button in an active mode. Triggered only if recovery of external process was successful
+    In addition it also enables all connected components
+    '''
     super(SR2ButtonInitExtProcess, self).recover()
     rospy.loginfo('SR2: Recovery successful. Connected to running init ext.process. Connected components will be available to the user')
     self.block_override.emit(False)
@@ -508,6 +534,9 @@ class SR2ViewButtonExtProcess(QWidget):
     
   @pyqtSlot()
   def recover(self):
+    '''
+    Sets button in an active mode. Triggered only if recovery of external process was successful
+    '''
     self.toggleControl = True
     self.active = True
     self.statusOkay = True
@@ -551,6 +580,9 @@ class SR2ButtonService(IconToolButton):
     
   @pyqtSlot()
   def call(self):
+    '''
+    If button is enabled, initiate a service call
+    '''
     if self.init_block_enabled:
       rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
       return
@@ -565,15 +597,25 @@ class SR2ButtonService(IconToolButton):
 
   @pyqtSlot(bool)
   def block(self, state):
+    '''
+    Disables button from futher interaction while service is being called (or until timeout occurs)
+    '''
     if state: self.setIcon(self.icons[IconType.running])
     self.disabled = state
     
   @pyqtSlot(bool)
   def block_override(self, block_override_flag):
+    '''
+    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+    '''
     self.init_block_enabled = block_override_flag
 
   @pyqtSlot(int, str)
   def reply(self, status, msg):
+    '''
+    Based on the success status returned by the service call (SUCCESS_TRUE, SUCCESS_FALSE, FAILED)
+    the button is enabled and changes its icon while the test of the status label displays information on how the service call went
+    '''
     if status in [ServiceRunnable.CallStatus.SUCCESS_TRUE, ServiceRunnable.CallStatus.SUCCESS_FALSE]:
       self.setIcon(self.icons[IconType.inactive])
       rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
@@ -805,6 +847,11 @@ class SR2ButtonWithView(IconToolButton):
   
   @pyqtSlot(bool)
   def block_override(self, block_override_flag):
+    '''
+    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+    
+    Currently blocking the view's components is NOT supported
+    '''
     self.init_block_enabled = block_override_flag
 
   def toggleView(self):
