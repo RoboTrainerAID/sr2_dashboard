@@ -25,6 +25,7 @@ from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 
 # TODO Add button name to PID file to make workers for even same commands plus same arguments produce different files based on which part of the UI (toolbar, view) they belong to
 # TODO Replace IconToolButton with own, add parent attribute in order to properly clean up files and objects
+# TODO Pass init-component to view and view-internal widgets to block these two if init ext.process is not running
 
 class Status():
   '''
@@ -36,7 +37,7 @@ class Status():
 
 class SR2Button():
   @staticmethod
-  def createButton(context, yaml_entry_data, name, parent=None):
+  def createButton(context, yaml_entry_data, name, parent=None, init=False):
     '''
     Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
 
@@ -67,7 +68,8 @@ class SR2Button():
           return SR2ButtonService(name, args, timeout, parent)
         else:
           # External process (roslaunch, rosrun or app)
-          return SR2ButtonExtProcess(name, cmd, pkg, args, parent)
+          if init: return SR2ButtonInitExtProcess(name, cmd, pkg, args, parent)
+          else: return SR2ButtonExtProcess(name, cmd, pkg, args, parent)
       elif yaml_entry_data['type'] == 'view':
         # View
         rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
@@ -89,6 +91,8 @@ class SR2Button():
       else:
         # External process (roslaunch, rosrun or app)
         return SR2ViewButtonExtProcess(name, cmd, pkg, args, parent)
+        
+############## QToolButton ############
 
 ##############################################################################################################################################
 #########################################################  SR2ButtonExtProcess  ##############################################################
@@ -123,7 +127,7 @@ class SR2ButtonExtProcess(IconToolButton):
     self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
     self.toggleControl = False
     self.setIcon(self.icons[IconType.inactive])
-    self.setToolTip('Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' inactive')
+    self.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' inactive')
 
     self.clicked.connect(self.toggle)
     
@@ -132,6 +136,8 @@ class SR2ButtonExtProcess(IconToolButton):
 
     self.worker_thread = QThread()
     self.createWorker()
+    
+    self.init_block_enabled = True
 
   def createWorker(self):
     '''
@@ -167,7 +173,6 @@ class SR2ButtonExtProcess(IconToolButton):
     # Start the thread
     self.worker_thread.start()
 
-
   def __del__(self):
     if(self.worker_thread.isRunning()):
       self.worker_thread.exit()
@@ -191,19 +196,19 @@ class SR2ButtonExtProcess(IconToolButton):
       rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
       self.setIcon(self.icons[IconType.inactive])
 #      self.execute_button.setDisabled(False)
-      self.tooltip = 'Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' inactive/finished'
+      self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' inactive/finished'
       self.active = False
     elif status == ProcStatus.RUNNING:
       rospy.loginfo('SR2: Status has changed to: RUNNING')
       self.setIcon(self.icons[IconType.running])
 #      self.execute_button.setDisabled(False)
-      self.tooltip = 'Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' running'
+      self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' running'
       self.active = True
     elif status == ProcStatus.FAILED_START:
       rospy.logerr('SR2: Status has changed to: FAILED_START')
 #      self.execute_button.setDisabled(False)
       self.setIcon(self.icons[IconType.error])
-      self.tooltip = 'Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' failed to start'
+      self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' failed to start'
       self.statusOkay = False
       self.active = True
       self.toggleControl = False
@@ -211,7 +216,7 @@ class SR2ButtonExtProcess(IconToolButton):
       rospy.logerr('SR2: Status has changed to: FAILED_STOP')
 #      self.execute_button.setDisabled(False)
       self.setIcon(self.icons[IconType.error])
-      self.tooltip = 'Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' failed to stop'
+      self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' failed to stop'
       self.statusOkay = False
       self.active = True
       self.toggleControl = False
@@ -227,6 +232,10 @@ class SR2ButtonExtProcess(IconToolButton):
     :param block_flag - enable/disable flag for the button
     '''
     self.setDisabled(block_flag)
+    
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    self.init_block_enabled = block_override_flag
 
   @pyqtSlot()
   def toggle(self):
@@ -237,6 +246,10 @@ class SR2ButtonExtProcess(IconToolButton):
       - both statusOkay and toggleControl are True - attempt to start the process
       - statusOkay is True but toggleControl is False - attempt to stop the process
     '''
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+      
     if not self.statusOkay:
       # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
       self.statusOkay = True
@@ -253,6 +266,43 @@ class SR2ButtonExtProcess(IconToolButton):
     self.toggleControl = True
     self.active = True
     self.statusOkay = True
+    
+##############################################################################################################################################
+########################################################  SR2ButtonInitExtProcess  ###########################################################
+##############################################################################################################################################
+    
+class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
+
+  block_override = pyqtSignal(bool)  # Connect this to 
+  
+  def __init__(self, name, cmd, pkg, args, parent=None, surpress_overlays=False, minimal=True):
+    super(SR2ButtonInitExtProcess, self).__init__(name, cmd, pkg, args, parent, surpress_overlays, minimal)
+    rospy.loginfo('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+    self.init_block_enabled = False
+    # TODO Add block override to all toolbar buttons
+    # The block override will override the blocking from the workers of these buttons based on the enable-state of the INIT button
+    # TODO Connect block override to all toolbar buttons
+    # TODO If super.state is INACTIVE or FAILED -> emit block_override
+    # TODO Figure out how to handle the recovery 
+    
+  @pyqtSlot(int)
+  def statusChangedReceived(self, status):
+    super(SR2ButtonInitExtProcess, self).statusChangedReceived(status)
+    if status != ProcStatus.RUNNING:
+      rospy.logerr('SR2: Init ext.process stopped running')
+      self.block_override.emit(True)
+    else:
+      rospy.loginfo('SR2: Init ext.process is now running. Connected components will be available to the user')
+      self.block_override.emit(False)
+    
+  @pyqtSlot()
+  def recover(self):
+    super(SR2ButtonInitExtProcess, self).recover()
+    rospy.loginfo('SR2: Recovery successful. Connected to running init ext.process. Connected components will be available to the user')
+    self.block_override.emit(False)
+    
+#  def changeEvent(self, event):
+#    print('Change event')
 
 ##############################################################################################################################################
 #########################################################  SR2ButtonExtProcess  ##############################################################
@@ -281,7 +331,7 @@ class SR2ViewButtonExtProcess(QWidget):
     self.cmd = cmd
     self.args = args
     self.pkg = pkg
-    self.setWindowTitle('Ext.process "' + self.cmd + '"')
+    self.setWindowTitle('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"')
 
     layout = QVBoxLayout(self)
     layout.setObjectName(name + 'Layout Ext Proc')
@@ -292,7 +342,7 @@ class SR2ViewButtonExtProcess(QWidget):
     self.status_label = QLabel(self)
     self.status_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
     self.status_label.setScaledContents(True);
-    self.status_label.setToolTip('Ext.process "' + self.cmd + ' ' + self.args + '"' + ((' from package "' + self.pkg + '"') if self.pkg else '') + ' inactive')
+    self.status_label.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' inactive')
     self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0])) # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
     controls_layout.addWidget(self.status_label)
     self.execute_button = QPushButton('Execute', self)
@@ -497,9 +547,14 @@ class SR2ButtonService(IconToolButton):
     self.clicked.connect(self.call)
 
     self.disabled = False
+    self.init_block_enabled = True
     
   @pyqtSlot()
   def call(self):
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+      
     if not self.disabled:
       rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d', self.args, int(QThread.currentThreadId()), self.timeout)
       self.thread_pool.start(self.service)
@@ -512,6 +567,10 @@ class SR2ButtonService(IconToolButton):
   def block(self, state):
     if state: self.setIcon(self.icons[IconType.running])
     self.disabled = state
+    
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    self.init_block_enabled = block_override_flag
 
   @pyqtSlot(int, str)
   def reply(self, status, msg):
@@ -741,6 +800,12 @@ class SR2ButtonWithView(IconToolButton):
 
     self.close_mutex = QMutex()
     self.show_mutex = QMutex()
+    
+    self.init_block_enabled = True
+  
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    self.init_block_enabled = block_override_flag
 
   def toggleView(self):
     '''
@@ -751,6 +816,10 @@ class SR2ButtonWithView(IconToolButton):
     # since those are destroyed every  time the view is hidden thus
     # only the menu entry remains...OR MAYBE NOT XD
 
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+    
     if not self.yaml_view_buttons: return
 
     with QMutexLocker(self.show_mutex):

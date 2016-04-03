@@ -27,7 +27,7 @@ from yaml import YAMLError
 from python_qt_binding.QtGui import QStatusBar, QToolBar
 
 # QtCore modules
-from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize
+from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot
 
 # SR2 widgets
 #from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me #### OLD VERSION
@@ -167,15 +167,20 @@ class SR2Dashboard(Dashboard):
     if not rospy.has_param('/sr2_dashboard/dashboard/menus'):
       rospy.logfatal('SR2: Unable to find "/sr2_dashboard/dashboard/menus" on parameter server. Please make sure that you have executed "rosparam load your_config.yaml" before launching the SR2 Dashboard')
       return
-
-    # Retrieve all menus from YAML file
+    
+    # Retrieve all menus from YAML file 
     self._yMenus = rospy.get_param('/sr2_dashboard/dashboard/menus')
-
-
+    
     if len(self._yMenus) > 0: rospy.logdebug('SR2: Found %d menus' % len(self._yMenus))
     else:
-      rospy.logwarn('SR2: No menus found! Dashboard will be empty')
+      rospy.logerr('SR2: No menus found! Dashboard will be empty')
       return
+      
+    self._yInit = None
+    if not rospy.has_param('/sr2_dashboard/dashboard/init'):
+      rospy.logwarn('SR2: Init YAML node not found!')
+    else:
+      self._yInit = rospy.get_param('/sr2_dashboard/dashboard/init')
 
     # Populate the self.widgets list
     self.generate_widgets()
@@ -185,11 +190,18 @@ class SR2Dashboard(Dashboard):
     Populates the SR2Dashboard with widgets using the configuration stored inside the YAML file
     '''
     # Add default widgets
-    # TODO Find a way to convert rqt_graph, rqt_tf_tree to QWidget
+    if self._yInit:
+      self.init = sr2b.createButton(self.context, self._yInit, self._yInit['name'], init=True)
     self.monitor = MonitorDashWidget(self.context)
     self.console = ConsoleDashWidget(self.context, minimal=False)
     self.pose_view = SR2PoseView('Pose View', self.context, minimal=False)
-    self.widgets.append([self.monitor, self.console, self.pose_view])
+    if self.init:
+      try: self.init.block_override.connect(self.pose_view.block_override)
+      except: pass
+    
+    try: self.widgets.append([self.init, self.monitor, self.console, self.pose_view])
+    except: self.widgets.append([self.monitor, self.console, self.pose_view])
+    
     try:
       # Iterate through all menus
       for menuIdx in range(0,len(self._yMenus)):
@@ -203,9 +215,15 @@ class SR2Dashboard(Dashboard):
           # Create menu entry
           # OLD VERSION
           #entry = sr2me.createWidget(self.context, self._yMenus[menuIdx]['modules'][menu_entryIdx], self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
+  
+          # Connect self.init signals to menu entries' slots
           entry = sr2b.createButton(self.context, self._yMenus[menuIdx]['modules'][menu_entryIdx], self._yMenus[menuIdx]['modules'][menu_entryIdx]['name'])
           # Append menu entry to menubar
-          if entry: widget_curr_menu.append(entry)
+          if entry:
+            if self.init:
+              try: self.init.block_override.connect(entry.block_override)
+              except: pass
+            widget_curr_menu.append(entry)
 
         # Append the complete menu X to the list of widgets that are loaded when self.get_widgets() is called
         self.widgets.append(widget_curr_menu)
@@ -251,8 +269,18 @@ class SR2PoseView(IconToolButton):
     self.toggled = False
     
     self.clicked.connect(self.toggleView)
+    
+    self.init_block_enabled = True
+  
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    self.init_block_enabled = block_override_flag
 
   def toggleView(self):
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+      
     if self.pose_view is None:
       print('PoseView')
       self.pose_view = PoseViewWidget(None) # Curse Plugin argument for the constructor...

@@ -11,6 +11,7 @@ class IconType():
   running = 1
   error = 2
 
+  # Add icon handling for INIT (located in [SR2_DASHBOARD_ROOTDIR]/resources/images/init/)
   @staticmethod
   def loadIcons(name, with_view=False):
     '''
