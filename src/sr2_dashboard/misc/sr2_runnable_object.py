@@ -21,9 +21,9 @@ class SR2ServiceRunnable(QRunnable):
     '''
     A service call can have three states upon completion:
 
-      - successful with status True - button's icon changes to INACTIVE
-      - successful with status False - button's icon changes to INACTIVE
-      - failed - button's icon changes to ERROR
+      - **successful with status True** - button's icon changes to INACTIVE
+      - **successful with status False** - button's icon changes to INACTIVE
+      - **failed** - button's icon changes to ERROR
     '''
     SUCCESS_TRUE = 0
     SUCCESS_FALSE = 1
@@ -42,7 +42,7 @@ class SR2ServiceRunnable(QRunnable):
 
   def run(self):
     '''
-    When executed (using QThreadPool.start(<ServiceRunnable_instance>)) following
+    When executed (using QThreadPool.start(<SR2ServiceRunnable_instance>)) following
   happens:
 
     - Button that has triggerd it gets blocked
@@ -63,7 +63,7 @@ class SR2ServiceRunnable(QRunnable):
       rospy.wait_for_service(self.service, self.timeout)
       trigger_call = rospy.ServiceProxy(self.service, Trigger)
       call = trigger_call()
-      response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else ServiceRunnable.CallStatus.SUCCESS_FALSE
+      response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
       response_msg = call.message
     except rospy.ROSException, e:
       response_status = SR2ServiceRunnable.CallStatus.FAILED

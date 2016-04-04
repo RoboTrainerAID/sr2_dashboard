@@ -41,11 +41,12 @@ class SR2Button():
     '''
     Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
 
-      - SR2ButtonExtProcess (subclass of QPushButton; for toolbar) - a menu entry that launches an external process, stops it and also monitors its running status
-      - SR2ViewButtonExtProcess (subclass of QWidget; for view) - a view entry that launches an external process, stops it and also monitors its running status
-      - SR2ButtonService (subclass of QPushButton; for toolbar) - a menu entry that calls a ROS Trigger-based service and displays its reply
-      - SR2ViewButtonService (subclass of QWidget; for view) - a view entry that calls a ROS Trigger-based service and displays its reply
-      - SR2ToolbarButtonWithView (subclass of QToolButton; for toolbar) - a menu entry that opens a view in the main view of the SR2 Dashaboard
+      - **SR2ButtonExtProcess** (subclass of QPushButton; for toolbar) - a menu entry that launches an external process, stops it and also monitors its running status
+      - **SR2ButtonInitExtProcess** (subclass of SR2ButtonExtProcess) - a menu entry that launches an initialization external process, stops it and also monitors its running status
+      - **SR2ViewButtonExtProcess** (subclass of QWidget; for view) - a view entry that launches an external process, stops it and also monitors its running status
+      - **SR2ButtonService** (subclass of QPushButton; for toolbar) - a menu entry that calls a ROS Trigger-based service and displays its reply
+      - **SR2ViewButtonService** (subclass of QWidget; for view) - a view entry that calls a ROS Trigger-based service and displays its reply
+      - **SR2ToolbarButtonWithView** (subclass of QToolButton; for toolbar) - a menu entry that opens a view in the main view of the SR2 Dashaboard
     '''
     if not yaml_entry_data: return None
 
@@ -183,12 +184,15 @@ class SR2ButtonExtProcess(IconToolButton):
   def statusChangedReceived(self, status):
     '''
     Update the UI based on the status of the running process
-    :param status - status of the process started and monitored by the worker
+
+    :param status: status of the process started and monitored by the worker
+
     Following values for status are possible:
-      - INACTIVE/FINISHED - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
-      - RUNNING - if process is started successfully visual indicator
-      - FAILED_START - occurrs if the attempt to start the process has failed
-      - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
+
+      - **INACTIVE/FINISHED** - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
+      - **RUNNING** - if process is started successfully visual indicator
+      - **FAILED_START** - occurrs if the attempt to start the process has failed
+      - **FAILED_STOP** - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
     '''
 #    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
     self.tooltip = ''
@@ -229,7 +233,8 @@ class SR2ButtonExtProcess(IconToolButton):
     Enable/Disable the button which starts/stops the external process
     This slot is used for preventing the user to interact with the UI while starting/stopping the external process after a start/stop procedure has been initiated
     After the respective procedure has been completed the button will be enabled again
-    :param block_flag - enable/disable flag for the button
+
+    :param block_flag: enable/disable flag for the button
     '''
     self.setDisabled(block_flag)
 
@@ -237,6 +242,8 @@ class SR2ButtonExtProcess(IconToolButton):
   def block_override(self, block_override_flag):
     '''
     If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+    :param block_override_flag: enables/disable click action of button
     '''
     self.init_block_enabled = block_override_flag
 
@@ -244,10 +251,10 @@ class SR2ButtonExtProcess(IconToolButton):
   def toggle(self):
     '''
     Handles the start, stopping and error confirmation triggered by the button
-      - statusOkay is False - this occurs ONLY if the process status is an error (FAILED_START or FAILED_STOP)
-                                 In this case the user has to click twice on the button in order to reinitiate the starting procedure
-      - both statusOkay and toggleControl are True - attempt to start the process
-      - statusOkay is True but toggleControl is False - attempt to stop the process
+
+      - **statusOkay is False** - this occurs ONLY if the process status is an error (FAILED_START or FAILED_STOP). In this case the user has to click twice on the button in order to reinitiate the starting procedure
+      - **both statusOkay and toggleControl are True** - attempt to start the process
+      - **statusOkay is True but toggleControl is False** - attempt to stop the process
     '''
     if self.init_block_enabled:
       rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
@@ -299,12 +306,15 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
   def statusChangedReceived(self, status):
     '''
     Update the UI based on the status of the running process
-    :param status - status of the process started and monitored by the worker
+
+    :param status: status of the process started and monitored by the worker
+
     Following values for status are possible:
-      - INACTIVE/FINISHED - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
-      - RUNNING - if process is started successfully visual indicator
-      - FAILED_START - occurrs if the attempt to start the process has failed
-      - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
+
+      - **INACTIVE/FINISHED** - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
+      - **RUNNING** - if process is started successfully visual indicator
+      - **FAILED_START** - occurrs if the attempt to start the process has failed
+      - **FAILED_STOP** - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
 
     In case the init external process isn't running a blocking signal is sent to all components connected to this button in order to disable the interaction with them
     The interaction with other connected buttons is disable until the init external process isn't running again
@@ -465,12 +475,15 @@ class SR2ViewButtonExtProcess(QWidget):
   def statusChangedReceived(self, status):
     '''
     Update the UI based on the status of the running process
-    :param status - status of the process started and monitored by the worker
+
+    :param status: status of the process started and monitored by the worker
+
     Following values for status are possible:
-      - INACTIVE/FINISHED - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
-      - RUNNING - if process is started successfully visual indicator
-      - FAILED_START - occurrs if the attempt to start the process has failed
-      - FAILED_STOP - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
+
+      - **INACTIVE/FINISHED** - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
+      - **RUNNING** - if process is started successfully visual indicator
+      - **FAILED_START** - occurrs if the attempt to start the process has failed
+      - **FAILED_STOP** - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
     '''
 #    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
@@ -508,7 +521,8 @@ class SR2ViewButtonExtProcess(QWidget):
     Enable/Disable the button which starts/stops the external process
     This slot is used for preventing the user to interact with the UI while starting/stopping the external process after a start/stop procedure has been initiated
     After the respective procedure has been completed the button will be enabled again
-    :param block_flag - enable/disable flag for the button
+
+    :param block_flag: enable/disable flag for the button
     '''
     self.execute_button.setDisabled(block_flag)
 
@@ -516,10 +530,10 @@ class SR2ViewButtonExtProcess(QWidget):
   def toggle(self):
     '''
     Handles the start, stopping and error confirmation triggered by the button
-      - statusOkay is False - this occurs ONLY if the process status is an error (FAILED_START or FAILED_STOP)
-                                 In this case the user has to click twice on the button in order to reinitiate the starting procedure
-      - both statusOkay and toggleControl are True - attempt to start the process
-      - statusOkay is True but toggleControl is False - attempt to stop the process
+
+      - **statusOkay is False** - this occurs ONLY if the process status is an error (FAILED_START or FAILED_STOP). In this case the user has to click twice on the button in order to reinitiate the starting procedure
+      - **both statusOkay and toggleControl are True** - attempt to start the process
+      - **statusOkay is True but toggleControl is False** - attempt to stop the process
     '''
     if not self.statusOkay:
       # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
@@ -607,6 +621,8 @@ class SR2ButtonService(IconToolButton):
   def block_override(self, block_override_flag):
     '''
     If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+    :param block_override_flag: enables/disable click action of button
     '''
     self.init_block_enabled = block_override_flag
 
@@ -849,6 +865,8 @@ class SR2ButtonWithView(IconToolButton):
   def block_override(self, block_override_flag):
     '''
     If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+    :param block_override_flag: enables/disable click action of button
 
     Currently blocking the view's components is NOT supported
     '''

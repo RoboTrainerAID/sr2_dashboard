@@ -43,7 +43,7 @@ class SR2Worker(QObject):
     self.dir_name = '/tmp'
     self.path = self.dir_name + '/pid_' + cmd + (pkg if pkg else '') + (args if args else '') + name
     self.path = self.path.replace('=','').replace('.','').replace(' ','').replace(':','').replace('~','')
-  
+
 # TODO Add cleanup upon destruction of worker and IF process is not running
 #  def __del__(self):
 #    if self._status != ProcStatus.RUNNING:
@@ -152,6 +152,7 @@ class SR2Worker(QObject):
     '''
     Q_PROPERTY setter for status
     If status has changed notification is triggered
+
     :param status: new status
     '''
     if self._status == status: return
@@ -163,7 +164,10 @@ class SR2Worker(QObject):
   def checkPid(self, pid):
     '''
     Checks if a process with a given PID is running or not
+
     :param pid: PID of process that needs to be checked
+
+    :return: False if PID doesn't represent a running process or an error has occurred
     '''
     if not pid: return False
 
@@ -174,8 +178,8 @@ class SR2Worker(QObject):
   def checkPidFileExists(self):
     '''
     Checks if given file exists (not directory!) and creates one if it doesn't
-    :param path: path to file that needs to be checked
-    :return False if file was nonexistent
+
+    :return: False if file was nonexistent
     '''
     try:
       if not path.isfile(self.path):
@@ -191,8 +195,6 @@ class SR2Worker(QObject):
   def writePidToFile(self):
     '''
     Writes PID to file. It invokes a check whether file exists and whether it's empty. If either of these preconditions fail, no data is written to file
-    :param path: path of PID file
-    :param source: PID
     '''
     rospy.loginfo('SR2: Attempting to write %s to %s' % (str(self.pid), self.path))
     if not self.pid: return
@@ -208,6 +210,7 @@ class SR2Worker(QObject):
   def isPidFileEmpty(self):
     '''
     Checks if a given file is empty
+
     :param path: path to file that needs to be checked
     '''
     # Use of exception handling here is necessary because if file doesn't exist the following won't work
@@ -216,7 +219,9 @@ class SR2Worker(QObject):
 
   def loadPid(self):
     '''
-    Returns a PID stored in a valid file _path; else returns None
+    Loads a PID from a PID file if file exists and the PID stored in it represents a running process
+
+    :return: PID if loading successful, else None
     '''
     if self.checkPidFileExists() and not self.isPidFileEmpty():
       with open(self.path, 'r') as pidFile:
@@ -234,13 +239,17 @@ class SR2Worker(QObject):
   def checkProcessRunning(self, pid):
     '''
     Invokes checkPid() in order to check whether the process is running or not including cleanup afterwards
+
+    :param pid: PID of process that needs to be checked
+
+    :return: True PID represents a running process
     '''
     running = self.checkPid(pid)
 
     # A running external process here is considered to be a tuple of the running process itself and the bash that has spawned
     # If this requirement is not fulfilled we kill the one that is running
     if not running:
-      if pid:
+      if pid: # TODO Why did I put this here? :D
 #        self.cleanup()
 #        self.setStatus(ProcStatus.FAILED_START)
         return False
