@@ -12,7 +12,7 @@ class ServiceCallSignals(QObject):
   srv_status = pyqtSignal(int, str) # (one of the values stored inside CallStatus, reply message)
   srv_running = pyqtSignal(bool)    # if True caller UI component will be blocked else unblocked
 
-class ServiceRunnable(QRunnable):
+class SR2ServiceRunnable(QRunnable):
   '''
   Intiate a ROS service call and reports back to the UI component that has triggered the procedure
   '''
@@ -35,7 +35,7 @@ class ServiceRunnable(QRunnable):
     :param service_name: name of the ROS service that we want to call
     :param timout: maximum amount of time (in seconds) required for connecting to the given service
     '''
-    super(ServiceRunnable, self).__init__()
+    super(SR2ServiceRunnable, self).__init__()
     self.signals = ServiceCallSignals()
     self.service = service_name
     self.timeout = timeout
@@ -63,10 +63,10 @@ class ServiceRunnable(QRunnable):
       rospy.wait_for_service(self.service, self.timeout)
       trigger_call = rospy.ServiceProxy(self.service, Trigger)
       call = trigger_call()
-      response_status = ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else ServiceRunnable.CallStatus.SUCCESS_FALSE
+      response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else ServiceRunnable.CallStatus.SUCCESS_FALSE
       response_msg = call.message
     except rospy.ROSException, e:
-      response_status = ServiceRunnable.CallStatus.FAILED
+      response_status = SR2ServiceRunnable.CallStatus.FAILED
       response_msg = e.message
 
     self.signals.srv_running.emit(False)
