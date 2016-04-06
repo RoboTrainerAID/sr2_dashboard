@@ -19,3 +19,10 @@ right+center: views (1),2),3))
 10)Add perspective
 11)Add pose view as view --> Add createView that takes a widget as argument and creates a SR2View only with that widget
 12)Add TF tree launcher
+
+
+------------------------
+TIPS:
+1) Change icon of service call entity into sand clock during waiting
+2) Add support of complex services however the arguments of a service will be editable only inside the configuration file
+3) Detect presence of roscore
