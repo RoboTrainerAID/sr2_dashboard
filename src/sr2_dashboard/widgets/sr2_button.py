@@ -37,7 +37,7 @@ class Status():
 
 class SR2Button():
   @staticmethod
-  def createButton(context, yaml_entry_data, name, parent=None, init=False):
+  def createButton(context, yaml_entry_data, name, parent=None, init=False, init_widget=None):
     '''
     Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
 
@@ -74,7 +74,7 @@ class SR2Button():
       elif yaml_entry_data['type'] == 'view':
         # View
         rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
-        return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context)
+        return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context, init_widget)
       else:
         rospy.logerr('SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
         return None
@@ -283,7 +283,6 @@ class SR2ButtonExtProcess(IconToolButton):
 ##############################################################################################################################################
 ########################################################  SR2ButtonInitExtProcess  ###########################################################
 ##############################################################################################################################################
-
 class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
   '''
   Part of a toolbar; gives the ability to start/stop and monitor an external process (roslaunch, rosrun or standalone application)
@@ -464,6 +463,8 @@ class SR2ViewButtonExtProcess(QWidget):
     # Start the thread
     self.worker_thread.start()
 
+    self.init_block_enabled = True
+
 
   def __del__(self):
     if(self.worker_thread.isRunning()):
@@ -526,6 +527,17 @@ class SR2ViewButtonExtProcess(QWidget):
     '''
     self.execute_button.setDisabled(block_flag)
 
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    '''
+    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+    :param block_override_flag: enables/disable click action of button
+
+    Currently blocking the view's components is NOT supported
+    '''
+    self.init_block_enabled = block_override_flag
+
   @pyqtSlot()
   def toggle(self):
     '''
@@ -535,6 +547,10 @@ class SR2ViewButtonExtProcess(QWidget):
       - **both statusOkay and toggleControl are True** - attempt to start the process
       - **statusOkay is True but toggleControl is False** - attempt to stop the process
     '''
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+
     if not self.statusOkay:
       # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
       self.statusOkay = True
@@ -655,6 +671,10 @@ class SR2ViewButtonService(QWidget):
     '''
     If button is enabled, initiate a service call
     '''
+    if self.init_block_enabled:
+      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+      return
+
     if not self.disabled:
       self.reply_statL.setText('Reply status:')
       self.reply_msgL.setText('Reply message:')
@@ -699,6 +719,15 @@ class SR2ViewButtonService(QWidget):
 
     self.service_caller.setDisabled(False)
 #    self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: ' + msg)
+
+  @pyqtSlot(bool)
+  def block_override(self, block_override_flag):
+    '''
+    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+    :param block_override_flag: enables/disable click action of button
+    '''
+    self.init_block_enabled = block_override_flag
 
   def __init__(self, name, args, timeout, parent=None):
     super(SR2ViewButtonService, self).__init__(parent)
@@ -759,6 +788,7 @@ class SR2ViewButtonService(QWidget):
     self.service_caller.clicked.connect(self.call)
 
     self.disabled = False
+    self.init_block_enabled = True
 
     self.setLayout(layout)
     self.resize(layout.sizeHint())
@@ -777,7 +807,7 @@ class SR2ButtonWithView(IconToolButton):
   Part of a toolbar; opens a view
   '''
   class SR2View(QWidget):
-    def __init__(self, name, yaml_button_list, parent=None):
+    def __init__(self, name, yaml_button_list, parent=None, init_widget=None):
       super(SR2ButtonWithView.SR2View, self).__init__(parent)
 
       name = name + ' View'
@@ -795,6 +825,9 @@ class SR2ButtonWithView(IconToolButton):
       for yaml_button_entry in yaml_button_list:
         button = SR2Button.createButton(None, yaml_button_entry, name+str(idx), self)
         if not button: continue
+        if init_widget:
+          try: init_widget.block_override.connect(button.block_override)
+          except: pass
         self.buttons.append(button)
         idx += 1
 
