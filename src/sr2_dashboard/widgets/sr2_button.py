@@ -606,15 +606,23 @@ class SR2ButtonService(IconToolButton):
     self.clicked.connect(self.call)
 
     self.disabled = False
-    self.init_block_enabled = True
+#    self.init_block_enabled = True
+    self.statusOkay = True
 
   @pyqtSlot()
   def call(self):
     '''
     If button is enabled, initiate a service call
     '''
-    if self.init_block_enabled:
-      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+#    if self.init_block_enabled:
+#      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+#      return
+
+    if not self.statusOkay:
+      # If an error has occurred the first thing the user has to do is reset the state by acknowleding the error
+      self.statusOkay = True
+      rospy.loginfo('SR2: Error acknowledged')
+#      self.clear_error_signal.emit() ' No need for that sincethe
       return
 
     if not self.disabled:
@@ -633,14 +641,14 @@ class SR2ButtonService(IconToolButton):
     if state: self.setIcon(self.icons[IconType.running])
     self.disabled = state
 
-  @pyqtSlot(bool)
-  def block_override(self, block_override_flag):
-    '''
-    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
-
-    :param block_override_flag: enables/disable click action of button
-    '''
-    self.init_block_enabled = block_override_flag
+#  @pyqtSlot(bool)
+#  def block_override(self, block_override_flag):
+#    '''
+#    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+#
+#    :param block_override_flag: enables/disable click action of button
+#    '''
+#    self.init_block_enabled = block_override_flag
 
   @pyqtSlot(int, str)
   def reply(self, status, msg):
@@ -653,6 +661,7 @@ class SR2ButtonService(IconToolButton):
       rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"', self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
     else:
       self.setIcon(self.icons[IconType.error])
+      self.statusOkay = False
       rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"', self.args, int(QThread.currentThreadId()), msg)
 
     self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Reply: ' + msg
@@ -671,8 +680,13 @@ class SR2ViewButtonService(QWidget):
     '''
     If button is enabled, initiate a service call
     '''
-    if self.init_block_enabled:
-      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+#    if self.init_block_enabled:
+#      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+#      return
+    if not self.statusOkay:
+      self.service_caller.setText('Call')
+      self.statusOkay = True
+      rospy.loginfo('SR2: Error acknowledged')
       return
 
     if not self.disabled:
@@ -694,9 +708,10 @@ class SR2ViewButtonService(QWidget):
     if state:
       #self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
       self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
-      self.status_label.setToolTip('Service call "' + self.args + '" is being processed...')
+      self.status_label.setToolTip('Service call "' + self.args + '" is being processed...') # FIXME Currently after running a call the "is being processed" is still attached even though the call is inactive
 #      self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: Running...')
       self.service_caller.setDisabled(True)
+
     self.disabled = state
 
   @pyqtSlot(int, str)
@@ -716,18 +731,20 @@ class SR2ViewButtonService(QWidget):
       rospy.logerr('SR2: Calling service %s failed due to "%s"', self.args, msg)
       self.reply_statL.setText('Reply status: <font color=\"red\">Error</font>')
       self.reply_msgL.setText('Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
+      self.service_caller.setText('Confirm')
+      self.statusOkay = False
 
     self.service_caller.setDisabled(False)
 #    self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: ' + msg)
 
-  @pyqtSlot(bool)
-  def block_override(self, block_override_flag):
-    '''
-    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
-
-    :param block_override_flag: enables/disable click action of button
-    '''
-    self.init_block_enabled = block_override_flag
+#  @pyqtSlot(bool)
+#  def block_override(self, block_override_flag):
+#    '''
+#    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+#
+#    :param block_override_flag: enables/disable click action of button
+#    '''
+#    self.init_block_enabled = block_override_flag
 
   def __init__(self, name, args, timeout, parent=None):
     super(SR2ViewButtonService, self).__init__(parent)
@@ -788,7 +805,8 @@ class SR2ViewButtonService(QWidget):
     self.service_caller.clicked.connect(self.call)
 
     self.disabled = False
-    self.init_block_enabled = True
+#    self.init_block_enabled = True
+    self.statusOkay = True
 
     self.setLayout(layout)
     self.resize(layout.sizeHint())
@@ -825,9 +843,9 @@ class SR2ButtonWithView(IconToolButton):
       for yaml_button_entry in yaml_button_list:
         button = SR2Button.createButton(None, yaml_button_entry, name+str(idx), self)
         if not button: continue
-        if init_widget:
-          try: init_widget.block_override.connect(button.block_override)
-          except: pass
+#        if init_widget:
+#          try: init_widget.block_override.connect(button.block_override)
+#          except: pass
         self.buttons.append(button)
         idx += 1
 
