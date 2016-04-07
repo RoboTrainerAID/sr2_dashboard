@@ -1,0 +1,6 @@
+1) Timeout for services set 0 (check docs rospy.wait_for_service(...))
+2) Custom icons
+3) Mapping view
+4) Rviz widget (without Time view at the bottom)
+5) Define width/height of widgets in context
+6) Add custom widgets

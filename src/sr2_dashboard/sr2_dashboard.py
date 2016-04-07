@@ -195,7 +195,7 @@ class SR2Dashboard(Dashboard):
     if self._yInit:
       self.init = sr2b.createButton(self.context, self._yInit, self._yInit['name'], init=True)
     self.monitor = MonitorDashWidget(self.context)
-#    self.console = ConsoleDashWidget(self.context, minimal=False)
+    self.console = ConsoleDashWidget(self.context, minimal=False)
     self.pose_view = SR2PoseView('Pose View', self.context, minimal=False)
 
     if self.init:
@@ -209,8 +209,8 @@ class SR2Dashboard(Dashboard):
 
 #    try: self.widgets.append([self.init, self.monitor, self.console, self.pose_view])
 #    except: self.widgets.append([self.monitor, self.console, self.pose_view])
-    if self.init: self.widgets.append([self.init, self.monitor, self.pose_view])
-    else: self.widgets.append([self.monitor, self.pose_view])
+    if self.init: self.widgets.append([self.init, self.monitor, self.console, self.pose_view])
+    else: self.widgets.append([self.monitor, self.console, self.pose_view])
 
     try:
       # Iterate through all menus
