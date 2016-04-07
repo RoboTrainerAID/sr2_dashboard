@@ -60,7 +60,7 @@ class SR2ServiceRunnable(QRunnable):
 
     self.signals.srv_running.emit(True)
     try:
-      rospy.wait_for_service(self.service, self.timeout)
+      rospy.wait_for_service(self.service, 0) #self.timeout)
       trigger_call = rospy.ServiceProxy(self.service, Trigger)
       call = trigger_call()
       response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
