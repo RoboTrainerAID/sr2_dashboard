@@ -27,7 +27,7 @@ from yaml import YAMLError
 from python_qt_binding.QtGui import QStatusBar, QToolBar
 
 # QtCore modules
-from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot
+from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot, pyqtSignal
 
 # SR2 widgets
 #from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me #### OLD VERSION
@@ -144,6 +144,7 @@ class SR2Dashboard(Dashboard):
   '''
   Contains a CoB/PR2-like dashboard with functionality that is used for controlling and monitoring the SR2 platform
   '''
+  __block_override_reset = pyqtSignal(bool) # All entities that support init block override are blocked initially. This signal is emitted if Init entry in YAML config file is not present in order to unblock all entities
   def setup(self, context):
     rospy.loginfo('SR2: Starting dashboard')
     self.name = 'SR2Dashboard'
@@ -199,7 +200,12 @@ class SR2Dashboard(Dashboard):
 
     if self.init:
       try: self.init.block_override.connect(self.pose_view.block_override)
-      except: pass
+      except:
+        self.__block_override_reset.connect(self.pose_view.block_override)
+        self.__block_override_reset.emit(False)
+    else:
+      self.__block_override_reset.connect(self.pose_view.block_override)
+      self.__block_override_reset.emit(False)
 
 #    try: self.widgets.append([self.init, self.monitor, self.console, self.pose_view])
 #    except: self.widgets.append([self.monitor, self.console, self.pose_view])
@@ -225,8 +231,17 @@ class SR2Dashboard(Dashboard):
           # Append menu entry to menubar
           if entry:
             if self.init:
-              try: self.init.block_override.connect(entry.block_override)
-              except: pass
+              try:
+                self.init.block_override.connect(entry.block_override)
+              except:
+                self.__block_override_reset.connect(entry.block_override)
+                self.__block_override_reset.emit(False)
+            else:
+              try:
+                self.__block_override_reset.connect(entry.block_override)
+                self.__block_override_reset.emit(False)
+              except:
+                pass
             widget_curr_menu.append(entry)
 
         # Append the complete menu X to the list of widgets that are loaded when self.get_widgets() is called
