@@ -35,8 +35,8 @@
 # Modification:
 # This file has been modified by Aleksandar Vladimirov Atanasov in order to
 # adapt it to the SR2 platform.
-# THE MODIFICATIONS ARE PROPERTY OF KARLSRUHE INSTITUTE OF TECHNOLOGY, KARLSRUHE, GERMANY
-
+# THE MODIFICATIONS ARE PROPERTY OF KARLSRUHE INSTITUTE OF TECHNOLOGY,
+# KARLSRUHE, GERMANY
 
 
 import os
@@ -45,6 +45,7 @@ import rospy
 from python_qt_binding.QtCore import Signal, QSize
 from python_qt_binding.QtGui import QIcon, QLabel
 from rqt_robot_dashboard.util import IconHelper
+
 
 class SR2BatteryDashWidget(QLabel):
     """
@@ -63,15 +64,18 @@ class SR2BatteryDashWidget(QLabel):
             charge_icons = []
             for x in range(6):
                 icons.append(['battery/battery-%s.svg' % (x * 20)])
-                charge_icons.append(['battery/battery-charge-%s.svg' % (x * 20)])
-        icon_paths = (icon_paths if icon_paths else []) + [['sr2_dashboard', 'resources/images']]
+                charge_icons.append(
+                    ['battery/battery-charge-%s.svg' % (x * 20)])
+        icon_paths = (icon_paths if icon_paths else []) + \
+            [['sr2_dashboard', 'resources/images']]
         paths = []
         rp = rospkg.RosPack()
         for path in icon_paths:
             paths.append(os.path.join(rp.get_path(path[0]), path[1]))
         self._icon_helper = IconHelper(paths, name)
-	
-        converted_icons = self._icon_helper.set_icon_lists(icons, charge_icons, suppress_overlays)
+
+        converted_icons = self._icon_helper.set_icon_lists(
+            icons, charge_icons, suppress_overlays)
         self._icons = converted_icons[0]
         self._charge_icons = converted_icons[1]
         self._name = name
@@ -83,13 +87,13 @@ class SR2BatteryDashWidget(QLabel):
         self.update_time(0)
 
     def _update_state(self, state):
-#        if self._charging:
-#            self.setPixmap(self._charge_icons[state].pixmap(QSize(60, 100)))
-#        else:
-#            self.setPixmap(self._icons[state].pixmap(QSize(60, 100)))
+        #        if self._charging:
+        #            self.setPixmap(self._charge_icons[state].pixmap(QSize(60, 100)))
+        #        else:
+        #            self.setPixmap(self._icons[state].pixmap(QSize(60, 100)))
 
-	self.setPixmap(self._icons[state].pixmap(QSize(60, 100)))
-	pass
+        self.setPixmap(self._icons[state].pixmap(QSize(60, 100)))
+        pass
 
     @property
     def state(self):
@@ -118,8 +122,8 @@ class SR2BatteryDashWidget(QLabel):
         :param state: The state to set.
         :type state: int
         """
-	# The /power_state topic should be modified to contain the charging status (true/false)
-	# along with the publisher of /power_state that has to determine this status
+        # The /power_state topic should be modified to contain the charging status (true/false)
+        # along with the publisher of /power_state that has to determine this status
 #        if 0 <= state and state < len(self._icons):
 #            self.__state = state
 #            self.state_changed.emit(self.__state)
@@ -128,7 +132,7 @@ class SR2BatteryDashWidget(QLabel):
 
         self.__state = state
         self.state_changed.emit(self.__state)
-	pass
+        pass
 
     def update_time(self, value):
         try:

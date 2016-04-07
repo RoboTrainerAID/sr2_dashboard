@@ -8,30 +8,31 @@ import rospy
 
 # RQT Robot Dashboard
 from rqt_robot_dashboard.dashboard import Dashboard
-#from rqt_robot_dashboard.widgets import ...
+# from rqt_robot_dashboard.widgets import ...
 
 # PyQt
-#from python_qt_binding.QtCore import ...
+# from python_qt_binding.QtCore import ...
 
 # Widgets
 # ...
 
+
 class SR2Dashboard(Dashboard):
 
-  def setup(self, context):
-    self.name = 'SR2Dashboard'
-    
-    # declare subscribers and publishers
+    def setup(self, context):
+        self.name = 'SR2Dashboard'
 
-  def get_widgets(self):
-    return []
+        # declare subscribers and publishers
 
-  def shutdown_dashboard(self):
-    # unregister all subscribers
-    pass
+    def get_widgets(self):
+        return []
 
-  def save_settings(self, plugin_settings, instance_settings):
-    pass
+    def shutdown_dashboard(self):
+        # unregister all subscribers
+        pass
 
-  def restore_settings(self, plugin_settings, instance_settings):
-    pass
+    def save_settings(self, plugin_settings, instance_settings):
+        pass
+
+    def restore_settings(self, plugin_settings, instance_settings):
+        pass
