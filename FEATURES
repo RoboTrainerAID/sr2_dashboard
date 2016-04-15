@@ -1,6 +1,9 @@
 1) Timeout for services set 0 (check docs rospy.wait_for_service(...))
+  --> Actually this might be useful. The service call request is sent AFTER checking if the service is actually available
 2) Custom icons
 3) Mapping view
 4) Rviz widget (without Time view at the bottom)
+  --> Seems not possible. RViz is written in C++. Calling C++ in Python is possible but
+      doing that with RViz seems like a bad idea...
 5) Define width/height of widgets in context
 6) Add custom widgets

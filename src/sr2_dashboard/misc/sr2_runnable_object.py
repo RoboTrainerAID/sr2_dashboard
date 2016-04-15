@@ -33,7 +33,7 @@ class SR2ServiceRunnable(QRunnable):
         SUCCESS_FALSE = 1
         FAILED = 2
 
-    def __init__(self, service_name, timeout=10):
+    def __init__(self, service_name, timeout=0):
         '''
         Initializes the ServiceRunnable
         :param service_name: name of the ROS service that we want to call
@@ -64,7 +64,9 @@ class SR2ServiceRunnable(QRunnable):
 
         self.signals.srv_running.emit(True)
         try:
-            rospy.wait_for_service(self.service, 0)  # self.timeout)
+            # See if service is avialable for a given timeout (default 0: wait until available)
+            rospy.wait_for_service(self.service, self.timeout)
+            # If service is found, call the server and receive a response
             trigger_call = rospy.ServiceProxy(self.service, Trigger)
             call = trigger_call()
             response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE

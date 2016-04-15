@@ -647,7 +647,6 @@ class SR2ButtonService(IconToolButton):
     '''
     Part of a toolbar; initiates a service call and reports back once service has replied or timeout
     '''
-
     def __init__(self, name, args, timeout, parent=None, minimal=True):
         # Load icons
         _icons = IconType.loadIcons(name)

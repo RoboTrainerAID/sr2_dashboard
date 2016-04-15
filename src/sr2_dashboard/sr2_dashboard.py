@@ -159,12 +159,15 @@ class SR2Dashboard(Dashboard):
         self.context = context
         self.yFile = None
         self.widgets = []
-        self.status_bar = QStatusBar()
-        self.status_bar.showMessage('SR2 status: Welcome to the SR2 Dashboard')
+
+        # Statusbar
+#        self.status_bar = QStatusBar()
+#        self.status_bar.showMessage('SR2 status: Welcome to the SR2 Dashboard')
         # TODO Add full support for the statusbar
-        self.status_bar.setObjectName('Statusbar')
-        self.status_bar.setMaximumHeight(30)
-        self.context.add_widget(self.status_bar)
+#        self.status_bar.setObjectName('Statusbar')
+#        self.status_bar.setMaximumHeight(30)
+#        self.context.add_widget(self.status_bar)
+        # Extra toolbars
 #    self.toolbar2 = QToolBar()
 #    self.toolbar2.setObjectName('Toolbar') # The toolbar automatically added to the SR2 Dashboard has the name 'Dashboard'
 #    self.context.add_toolbar(self.toolbar2)
