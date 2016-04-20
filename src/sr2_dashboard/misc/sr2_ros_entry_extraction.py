@@ -6,6 +6,10 @@ import rospkg
 import os
 from rqt_robot_dashboard.util import IconHelper
 
+# For SR2ButtonImageGenerator
+import rospkg
+from python_qt_binding.QtSvg import QSvgRenderer
+
 
 class IconType():
     inactive = 0
@@ -14,6 +18,7 @@ class IconType():
 
     # Add icon handling for INIT (located in
     # [SR2_DASHBOARD_ROOTDIR]/resources/images/init/)
+    # TODO Remove this once checkImagePath(...) is done and image are loaded properly as icons for all buttons
     @staticmethod
     def loadIcons(name, with_view=False):
         '''
@@ -53,13 +58,72 @@ class IconType():
 
         return (converted_icons[0], res_icons)
 
+    @staticmethod
+    def checkImagePath(icon_path=None, pkg=None, view=False):
+        '''
+        Checks if the given icon_path represents a valid path
+        Note that loading the image may still fail even if the path is valid in
+        case the file is not an image supported by Qt's stylesheets
+
+        :param icon_path: path to image that will be used by the button as an icon
+        :param pkg: name of package (used in combination with icon_path if icon_path is relative and inside pkg)
+        :param view: used to determine default image for icon if icon_path is not valid. Ignored whenever icon_path is valid
+        :returns: unchanged icon_path if path is valid, else default path to image for icon
+        '''
+        rp = rospkg.RosPack()
+        error = False
+
+        try:
+            if icon_path:
+                if pkg:
+                    # If icon_path doesn't represent a valid file, package is taken into consideration
+                    # and an attempt is made to generate a valid path using it and the value of icon_path combined
+                    if not os.path.isfile(icon_path):
+                        rospy.loginfo('SR2: Package argument is present. Attempting to get full path of package and generate new path to icon')
+                        # In case package parameter is set generate a new absolute path that includes the package's path
+                        pkg_path = rp.get_path(pkg)
+                        icon_path = pkg_path + '/' + icon_path
+                    else:
+                        # Since icon_path is a valid path to a file, package is ignored
+                        rospy.loginfo('SR2: Package argument is present however given path is an absolute path referencing a file. Package will be ignored')
+
+                # Check if path points to a valid file (also after the package's path has been added to icon_path)
+                # Note: That if file is valid since type of file is not checked loading it may still fail)
+                #       It is up to the user to give a valid image file
+                if not os.path.isfile(icon_path):
+                    error = True
+
+            else:
+                rospy.logerr('SR2: Given icon path is empty')
+                error = True
+
+        except rospkg.ResourceNotFound:
+            # If rp.get_path(pkg) fails
+            rospy.logerr('SR2: Unable to retrieve path for given package')
+            error = True
+        except Exception as e:
+            rospy.logerr('SR2: Unknown exception occurred during check of path\'s validity.\nFull message: %s', e.message)
+            error = True
+        finally:
+            if error:
+                # Fallback to default
+                rospy.logwarn('SR2: Unable to find image at given path "%s". Falling back to default', icon_path)
+                sr2path = rp.get_path('sr2_dashboard')
+                if view:
+                    icon_path = sr2path + '/resources/images/control/menu/diagnostics.png'
+                else:
+                    icon_path = sr2path + '/resources/images/default.svg'
+
+            return icon_path
+
+
 
 class SR2PkgCmdExtractor:
     '''
     Returns the dimensions of a grid layout for the distribution of elements of a given list
     '''
     @staticmethod
-    def getRosPkgCmdData(yamlEntry):
+    def getRosPkgCmdData(yamlEntry, view=False):
         '''
         Extracts the package, command (node->rosrun, launch->roslaunch and service->rosservice call) and arguments (node->ROS node, launch->launch file, serivice->service to call) from YAML menu_entry and button data
 
@@ -76,14 +140,24 @@ class SR2PkgCmdExtractor:
         '''
         if not yamlEntry:
             rospy.logwarn('SR2: Empty entry configuration')
-            return ('', '', '', 0)
+            return ('', '', '', '', 0)
 
         pkg = ''
         cmd = ''   # Can be rosrun/roslaunch/rosservice call
         # Args is the actual ROS node/launch file/etc. we want to start
         # (exception: see "app" case)
         args = ''
+        icon = ''
+        icon_path = ''
         timeout = 0
+
+        # TESTING ICON PATH FEATURE
+#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+#        print(yamlEntry)
+#        if 'icon' in yamlEntry:
+#            icon_path = yamlEntry['icon']
+#            print('ICON PATH: "%s"' % (IconType.checkImagePath(icon, (yamlEntry['package'] if 'package' in yamlEntry else None))))
+#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 
 #    print(yamlEntry)
         # Try each of the possible configurations: node, launch and service
@@ -145,4 +219,8 @@ class SR2PkgCmdExtractor:
         else:
             rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
 
-        return (pkg, cmd, args, timeout)
+        if 'icon' in yamlEntry:
+            icon_path = yamlEntry['icon']
+        icon = IconType.checkImagePath(icon_path, pkg, view)
+        print('ICON: "%s"' % icon)
+        return (pkg, cmd, args, icon, timeout)

@@ -20,9 +20,10 @@ dashboard:
         # module 1
         - name: "Talker"
           type: "noview"
-          icon: ""
+
           # menu entry 1 in menu 1
           menu_entry: # describes what the entry will launch (a process or a view)
+            icon: "hello.svg"
             package: "lt"
             node: "talker.py"
             #args: "some options" # Optional
@@ -32,28 +33,31 @@ dashboard:
           type: "view"
           # menu entry 2 in menu 1
           menu_entry:
-            # Buttons for view toggled by menu entry 2 in menu 1
-            # button 1
-            - service: "trigger_srv"
-              timeout: 10
-            # button 2
-            - package: "lt"
-              launch: "talker"
-              #args: "some options" # Optional
-            # button 3
-            - service: "trigger_srv"
-            # button 4
-            - service: "trigger_srv"
-            # button 5
-            - service: "trigger_srv"
-            # button 6
-            - package: "lt"
-              launch: "listener"
-              #args: "some options" # Optional
-            # button 7
-            - service: "trigger_srv"
-            - service: "trigger_srv"
-            - service: "trigger_srv"
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              # Buttons for view toggled by menu entry 2 in menu 1
+              # button 1
+              - service: "trigger_srv"
+                timeout: 10
+#                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg"
+                icon: "resources/images/battery/battery-charge-100-green.svg"
+
+              # button 2
+              - package: "lt"
+                launch: "talker"
+                #args: "some options" # Optional
+              # button 3
+              - service: "trigger_srv"
+              # button 4
+              - service: "trigger_srv"
+              # button 5
+              - service: "trigger_srv"
+              # button 6
+              - package: "lt"
+                launch: "listener"
+                #args: "some options" # Optional
+              # button 7
+              - service: "trigger_srv"
 
     # menu 2
     - modules:
@@ -78,6 +82,7 @@ dashboard:
             # app -> execute a standalone application ('rqt_graph', 'rqt_tf_tree' etc.(non-ROS applications are also supported!))
             node: "listener.py"
             #args: "some options" # Optional
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg"
 
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
@@ -95,6 +100,7 @@ dashboard:
           type: "noview"
           # menu entry 3 in menu 2
           menu_entry:
+            icon: "resources/images/battery/battery-charge-100-green.svg"
             package: "testing"
             node: "trigger_srv_server.py"
 

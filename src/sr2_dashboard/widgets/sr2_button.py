@@ -6,7 +6,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame
+from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
 # from PyQt4.QtSvg import QSvgRenderer # TODO Add support for SVG for the
@@ -61,11 +61,12 @@ class SR2Button():
         cmd = ''
         args = ''
         timeout = 0
+        icon = ''
 
         if 'type' in yaml_entry_data:
             # We have an entry that is part of the toolbar
             if yaml_entry_data['type'] == 'noview':
-                pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data[
+                pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data[
                                                                               'menu_entry'])
                 if (not cmd and not pkg and not args and not timeout):
                     return None
@@ -76,13 +77,13 @@ class SR2Button():
                         rospy.logerr(
                             'SR2: Trying to create noview service button but service target is empty')
                         return None
-                    return SR2ButtonService(name, args, timeout, parent)
+                    return SR2ButtonService(name, args, timeout, icon, parent)
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
-                        return SR2ButtonInitExtProcess(name, cmd, pkg, args, parent)
+                        return SR2ButtonInitExtProcess(name, cmd, pkg, args, icon, parent)
                     else:
-                        return SR2ButtonExtProcess(name, cmd, pkg, args, parent)
+                        return SR2ButtonExtProcess(name, cmd, pkg, args, icon, parent)
             elif yaml_entry_data['type'] == 'view':
                 # View
                 rospy.logdebug(
@@ -94,8 +95,7 @@ class SR2Button():
                 return None
         else:
             # We have an entry that is part of a view
-            pkg, cmd, args, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(
-                yaml_entry_data)
+            pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
             if (not cmd and not pkg and not args and not timeout):
                 return None
             rospy.logdebug('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
@@ -105,12 +105,21 @@ class SR2Button():
                     rospy.logerr(
                         'SR2: Trying to create noview service button but service target is empty')
                     return None
-                return SR2ViewButtonService(name, args, timeout, parent)
+                return SR2ViewButtonService(name, args, timeout, icon, parent)
             else:
                 # External process (roslaunch, rosrun or app)
-                return SR2ViewButtonExtProcess(name, cmd, pkg, args, parent)
+                return SR2ViewButtonExtProcess(name, cmd, pkg, args, icon, parent)
 
 ############## QToolButton ############
+
+class SR2ToolButton(QToolButton):
+
+    '''
+    TODO Add own version of IconToolButton
+    :param name:
+    '''
+    def __init__(self, name, icons_converted):
+        pass
 
 ##########################################################################
 #########################################################  SR2ButtonExtPro
@@ -126,7 +135,7 @@ class SR2ButtonExtProcess(IconToolButton):
     clear_error_signal = pyqtSignal()
 
     # TODO Replace IconToolButton with own version (add parent property!)
-    def __init__(self, name, cmd, pkg, args, parent=None, surpress_overlays=False, minimal=True):
+    def __init__(self, name, cmd, pkg, args, icon, parent=None, surpress_overlays=False, minimal=True):
         _icons = IconType.loadIcons(name)
         super(SR2ButtonExtProcess, self).__init__(name, icons=_icons[
             1], icon_paths=[['sr2_dashboard', 'resources/images']])
@@ -330,7 +339,7 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
 
     block_override = pyqtSignal(bool)  # Connect this to
 
-    def __init__(self, name, cmd, pkg, args, parent=None, surpress_overlays=False, minimal=True):
+    def __init__(self, name, cmd, pkg, args, icon, parent=None, surpress_overlays=False, minimal=True):
         super(SR2ButtonInitExtProcess, self).__init__(
             name, cmd, pkg, args, parent, surpress_overlays, minimal)
         rospy.logdebug('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
@@ -394,7 +403,7 @@ class SR2ViewButtonExtProcess(QWidget):
     stop_signal = pyqtSignal()
     clear_error_signal = pyqtSignal()
 
-    def __init__(self, name, cmd, pkg, args, parent=None):
+    def __init__(self, name, cmd, pkg, args, icon, parent=None):
         _icons = IconType.loadIcons(name)
         super(SR2ViewButtonExtProcess, self).__init__(parent)
 
@@ -647,7 +656,7 @@ class SR2ButtonService(IconToolButton):
     '''
     Part of a toolbar; initiates a service call and reports back once service has replied or timeout
     '''
-    def __init__(self, name, args, timeout, parent=None, minimal=True):
+    def __init__(self, name, args, timeout, icon, parent=None, minimal=True):
         # Load icons
         _icons = IconType.loadIcons(name)
         super(SR2ButtonService, self).__init__(name, icons=_icons[
@@ -732,13 +741,13 @@ class SR2ButtonService(IconToolButton):
         '''
         if status in [SR2ServiceRunnable.CallStatus.SUCCESS_TRUE, SR2ServiceRunnable.CallStatus.SUCCESS_FALSE]:
             self.setIcon(self.icons[IconType.inactive])
-            rospy.loginfo('SR2: Calling service %s from thread %d successful. Service returned status %s with message "%s"',
-                          self.args, int(QThread.currentThreadId()), ('True' if not status else 'False'), msg)
+            rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
+                          self.args, ('True' if not status else 'False'), msg)
         else:
             self.setIcon(self.icons[IconType.error])
             self.statusOkay = False
-            rospy.logerr('SR2: Calling service %s from thread %d failed due to "%s"',
-                         self.args, int(QThread.currentThreadId()), msg)
+            rospy.logerr('SR2: Calling service %s failed due to "%s"',
+                         self.args, msg)
 
         self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + \
             self.args + '"</nobr><br/>Reply: ' + msg
@@ -837,7 +846,7 @@ class SR2ViewButtonService(QWidget):
 #    '''
 #    self.init_block_enabled = block_override_flag
 
-    def __init__(self, name, args, timeout, parent=None):
+    def __init__(self, name, args, timeout, icon, parent=None):
         super(SR2ViewButtonService, self).__init__(parent)
 
         _icons = IconType.loadIcons(name)
@@ -920,7 +929,7 @@ class SR2ViewButtonService(QWidget):
 ##########################################################################
 
 
-class SR2ButtonWithView(IconToolButton):
+class SR2ButtonWithView(QToolButton):
     '''
     Part of a toolbar; opens a view
     '''
@@ -990,20 +999,43 @@ class SR2ButtonWithView(IconToolButton):
     def __init__(self, name, yaml_entry_data, context, surpress_overlays=False, minimal=True):
         # Load icons
         icons = IconType.loadIcons(name, with_view=True)
-        super(SR2ButtonWithView, self).__init__(name, icons=icons[
-            1], icon_paths=[['sr2_dashboard', 'resources/images']])
+#        super(SR2ButtonWithView, self).__init__(name, icons=icons[
+#            1], icon_paths=[['sr2_dashboard', 'resources/images']])
+        super(SR2ButtonWithView, self).__init__()
 
         self.icons = icons[0]
         self.setStyleSheet('QToolButton {border: none;}')
+
+        # TODO
+        self.icon = ''
+        self.cornerRadius = 16
+        if 'icon' in yaml_entry_data:
+            # Set icon: IconType.checkImagePath(yaml_entry_data['icon'], view=True)
+            self.icon = IconType.checkImagePath(yaml_entry_data['icon'], view=True)
+        else:
+            self.icon = IconType.checkImagePath(view=True)
+
+        style = 'border-top-right-radius: ' + str(self.cornerRadius) + 'px; border-bottom-right-radius: ' + str(self.cornerRadius) + 'px; border-top-left-radius: ' + str(self.cornerRadius) + 'px; border-bottom-left-radius: ' + str(self.cornerRadius) + 'px; border-image: url("' + self.icon  + '"); background: none;'
+        self.setStyleSheet(style)
+
+#        # TESTING ICON PATH FEATURE
+#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+#        print(yaml_entry_data)
+#        if 'icon' in yaml_entry_data:
+#            icon = yaml_entry_data['icon']
+#            print('YAML ICON PATH: "%s"' % yaml_entry_data['icon'])
+#            print('ICON PATH: "%s"' % (IconType.checkImagePath(icon, view=True)))
+#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 
         try:
             # Buttons contains a list of YAML buttons inside the menu_entry of
             # the view node. This list is used for populating the view with
             # components
-            self.yaml_view_buttons = yaml_entry_data
-        except YAMLError:
-            rospy.logerr(
-                'SR2: Detected menu entry with view which does not contain any buttons. Generated view will be empty')
+            self.yaml_view_buttons = yaml_entry_data['buttons']
+            if not self.yaml_view_buttons:
+                raise Exception('Empty button list')
+        except (YAMLError, Exception):
+            rospy.logerr('SR2: Detected menu entry with view which does not contain any buttons. Generated view will be empty')
 
 #    self._plugin_settings = None
 #    self._instance_settings = None
@@ -1011,7 +1043,7 @@ class SR2ButtonWithView(IconToolButton):
         self.minimal = minimal
         self.name = name
         self.toggled = False
-        self.setIcon(self.icons[IconType.inactive])
+#        self.setIcon(self.icons[IconType.inactive])
         self.clicked.connect(self.toggleView)
         self.context = context
         self.setToolTip(self.name)
@@ -1051,19 +1083,22 @@ class SR2ButtonWithView(IconToolButton):
             return
 
         with QMutexLocker(self.show_mutex):
+            style = ''
             try:
                 if self.toggled:
                     # If menu entry is already displaying a view, remove it
                     self.toggled = False
                     self.context.remove_widget(self.view_widget)
                     self.close()
-                    self.setIcon(self._icons[IconType.inactive])
+#                    self.setIcon(self._icons[IconType.inactive])
+                    style = 'border-top-right-radius: ' + str(self.cornerRadius) + 'px; border-bottom-right-radius: ' + str(self.cornerRadius) + 'px; border-top-left-radius: ' + str(self.cornerRadius) + 'px; border-bottom-left-radius: ' + str(self.cornerRadius) + 'px; border-image: url("' + self.icon  + '"); background: none;'
                     rospy.logdebug('SR2: Closed SR2View "%s"', self.name)
                 else:
                     # If menu entry doesn't display a view, create it and
                     # display it
                     self.toggled = True
-                    self.setIcon(self._icons[IconType.running])
+#                    self.setIcon(self._icons[IconType.running])
+                    style = 'border-top-right-radius: ' + str(self.cornerRadius) + 'px; border-bottom-right-radius: ' + str(self.cornerRadius) + 'px; border-top-left-radius: ' + str(self.cornerRadius) + 'px; border-bottom-left-radius: ' + str(self.cornerRadius) + 'px; border-image: url("' + self.icon  + '"); background: rgb(89, 205, 139);'
                     rospy.logdebug('SR2: Added SR2View "%s"', self.name)
                     self.view_widget = SR2ButtonWithView.SR2View(
                         self.name, self.yaml_view_buttons)
@@ -1071,10 +1106,12 @@ class SR2ButtonWithView(IconToolButton):
                     self.context.add_widget(self.view_widget)
             except Exception as e:
                 if not self.view_widget:
-                    self.setIcon(self._icons[IconType.error])
-                    rospy.logerr(
-                        'SR2: Error during showing SR2View : %s', e.message)
+#                    self.setIcon(self._icons[IconType.error])
+                    style = 'border-top-right-radius: ' + str(self.cornerRadius) + 'px; border-bottom-right-radius: ' + str(self.cornerRadius) + 'px; border-top-left-radius: ' + str(self.cornerRadius) + 'px; border-bottom-left-radius: ' + str(self.cornerRadius) + 'px; border-image: url("' + self.icon  + '"); background: rgb(215, 56, 56);'
+                    rospy.logerr('SR2: Error during showing SR2View : %s', e.message)
                 self.toggled = False
+            finally:
+                self.setStyleSheet(style)
 
     def close(self):
         '''
