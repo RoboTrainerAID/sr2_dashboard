@@ -237,5 +237,4 @@ class SR2PkgCmdExtractor:
         if 'icon' in yamlEntry:
             icon_path = yamlEntry['icon']
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
-        print('ICON: "%s"' % icon)
         return (pkg, cmd, args, icon, timeout)

@@ -308,7 +308,7 @@ class SR2PoseView(QToolButton):
 
         self.context = context
         self.icon = icon
-        style = 'QToolButton{argin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + \
+        style = 'QToolButton{argin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url("' + \
             self.icon + '"); background: none;}'
         self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))

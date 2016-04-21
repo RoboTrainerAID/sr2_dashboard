@@ -58,6 +58,8 @@ dashboard:
                 #args: "some options" # Optional
               # button 7
               - service: "trigger_srv"
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/calculator.svg"
+                app: "gnome-calculator"
 
     # menu 2
     - modules:
