@@ -25,7 +25,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-from python_qt_binding.QtGui import QStatusBar, QToolBar
+from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton
 
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot, pyqtSignal
@@ -209,7 +209,8 @@ class SR2Dashboard(Dashboard):
                 self.context, self._yInit, self._yInit['name'], init=True)
         self.monitor = MonitorDashWidget(self.context)
         self.console = ConsoleDashWidget(self.context, minimal=False)
-        self.pose_view = SR2PoseView('Pose View', self.context, minimal=False)
+        pose_icon = IconType.checkImagePath(icon_type=IconType.type_view)
+        self.pose_view = SR2PoseView('Pose View', pose_icon, self.context, minimal=False)
 
         if self.init:
             try:
@@ -226,7 +227,8 @@ class SR2Dashboard(Dashboard):
             self.widgets.append(
                 [self.init, self.monitor, self.console, self.pose_view])
         else:
-            self.widgets.append([self.monitor, self.console, self.pose_view])
+            self.widgets.append([self.monitor, self.console])
+            self.widgets.append([self.pose_view])
 
         try:
             # Iterate through all menus
@@ -298,19 +300,17 @@ class SR2Dashboard(Dashboard):
 # Ported widget from RQT plugins
 
 
-class SR2PoseView(IconToolButton):
+class SR2PoseView(QToolButton):
 
-    def __init__(self, name, context, minimal=True):
-        icons = IconType.loadIcons(name, with_view=True)
-        super(SR2PoseView, self).__init__(name, icons=icons[
-            1], icon_paths=[['sr2_dashboard', 'resources/images']])
+    def __init__(self, name, icon, context, minimal=True):
+        super(SR2PoseView, self).__init__()
 
         self.context = context
-        self.icons = icons[0]
-        self.setStyleSheet('QToolButton {border: none;}')
+        self.icon = icon
+        style = 'QToolButton{argin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
 
-        self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
-        self.setIcon(self.icons[IconType.inactive])
         self.pose_view = None  # Contains the instance of PoseViewWidget
         self.close_mutex = QMutex()
         self.toggled = False

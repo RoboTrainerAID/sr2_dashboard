@@ -98,7 +98,7 @@ class SR2Worker(QObject):
             # Check if launching the external process was successful
             if not self.active or not self.pid:
                 self.setStatus(ProcStatus.FAILED_START)
-                self.block_signal(False)
+                self.block_signal.emit(False)
                 self.cleanup()
                 return
 

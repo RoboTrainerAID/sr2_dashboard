@@ -40,7 +40,7 @@ dashboard:
               - service: "trigger_srv"
                 timeout: 10
 #                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg"
-                icon: "resources/images/battery/battery-charge-100-green.svg"
+#                icon: "resources/images/battery/battery-charge-100-green.svg"
 
               # button 2
               - package: "lt"
@@ -82,7 +82,7 @@ dashboard:
             # app -> execute a standalone application ('rqt_graph', 'rqt_tf_tree' etc.(non-ROS applications are also supported!))
             node: "listener.py"
             #args: "some options" # Optional
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg"
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
 
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
@@ -100,7 +100,7 @@ dashboard:
           type: "noview"
           # menu entry 3 in menu 2
           menu_entry:
-            icon: "resources/images/battery/battery-charge-100-green.svg"
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
             package: "testing"
             node: "trigger_srv_server.py"
 
@@ -119,6 +119,7 @@ dashboard:
           type: "noview"
           # menu entry 1 in menu 3
           menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
             app: "firefox"
             args: "-new-window www.google.com"
         # module 7
@@ -126,7 +127,15 @@ dashboard:
           type: "noview"
           # menu entry 1 in menu 3
           menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/gedit.svg"
             app: "gedit"
+        - name: "Eclipse"
+          type: "noview"
+          # menu entry 1 in menu 3
+          menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/eclipse.svg"
+            app: "eclipse"
+            args: "&"
 
 
 ###############################################################################################################################################

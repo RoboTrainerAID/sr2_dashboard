@@ -12,54 +12,18 @@ from python_qt_binding.QtSvg import QSvgRenderer
 
 
 class IconType():
+    type_view = 0
+    type_proc = 1
+    type_srv = 2
+    type_app = 3
+    type_none = 4
+
     inactive = 0
     running = 1
     error = 2
 
-    # Add icon handling for INIT (located in
-    # [SR2_DASHBOARD_ROOTDIR]/resources/images/init/)
-    # TODO Remove this once checkImagePath(...) is done and image are loaded properly as icons for all buttons
     @staticmethod
-    def loadIcons(name, with_view=False):
-        '''
-        Loads predefined icons
-        '''
-        # Create paths
-        icon_paths = [['sr2_dashboard', 'resources/images']]
-        paths = []
-        rp = rospkg.RosPack()
-        for path in icon_paths:
-            paths.append(os.path.join(rp.get_path(path[0]), path[1]))
-
-        icon_helper = IconHelper(paths, name)
-
-        icons = []
-        res_icons = None
-        converted_icons = []
-
-        # Add icons
-        if with_view:
-            # Inactive view
-            icons.append(['control/menu/diagnostics_inactive.png'])
-            # Active view
-            icons.append(['control/menu/diagnostics_running.png'])
-            icons.append(['control/menu/diagnostics_error.png'])      # Failed
-            rospy.logdebug('SR2: Loaded icons for component with view')
-        else:
-            icons.append(['status/status_inactive.svg'])         # Inactive
-            icons.append(['status/status_running.svg'])          # Active
-            icons.append(['status/status_error.svg'])            # Failed
-            rospy.logdebug('SR2: Loaded icons for component without view')
-
-        res_icons = list(icons)
-        converted_icons = icon_helper.set_icon_lists(icons)
-
-        #converted_clicked_icons = None
-
-        return (converted_icons[0], res_icons)
-
-    @staticmethod
-    def checkImagePath(icon_path=None, pkg=None, view=False):
+    def checkImagePath(icon_path=None, pkg=None, icon_type=type_proc): # change view to icon_type (take type_* values) which will be used to load default icon based on the functionality that the UI component using the image has
         '''
         Checks if the given icon_path represents a valid path
         Note that loading the image may still fail even if the path is valid in
@@ -109,10 +73,16 @@ class IconType():
                 # Fallback to default
                 rospy.logwarn('SR2: Unable to find image at given path "%s". Falling back to default', icon_path)
                 sr2path = rp.get_path('sr2_dashboard')
-                if view:
-                    icon_path = sr2path + '/resources/images/control/menu/diagnostics.png'
+                if icon_type == IconType.type_view:
+                    icon_path = sr2path + '/resources/images/default/default_view.svg'
+                elif icon_type == IconType.type_proc:
+                    icon_path = sr2path + '/resources/images/default/default_proc.svg'
+                elif icon_type == IconType.type_srv:
+                    icon_path = sr2path + '/resources/images/default/default_service.svg'
+                elif icon_type == IconType.type_app:
+                    icon_path = sr2path + '/resources/images/default/default_app.svg'
                 else:
-                    icon_path = sr2path + '/resources/images/default.svg'
+                    icon_path = sr2path + '/resources/images/default/default_none.svg'
 
             return icon_path
 
@@ -149,18 +119,9 @@ class SR2PkgCmdExtractor:
         args = ''
         icon = ''
         icon_path = ''
+        icon_type = None
         timeout = 0
 
-        # TESTING ICON PATH FEATURE
-#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-#        print(yamlEntry)
-#        if 'icon' in yamlEntry:
-#            icon_path = yamlEntry['icon']
-#            print('ICON PATH: "%s"' % (IconType.checkImagePath(icon, (yamlEntry['package'] if 'package' in yamlEntry else None))))
-#        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-
-#    print(yamlEntry)
-        # Try each of the possible configurations: node, launch and service
 
         if 'package' in yamlEntry:
             # We can have either a rosrun or roslaunch
@@ -171,14 +132,16 @@ class SR2PkgCmdExtractor:
                 cmd = 'rosrun'
                 args = yamlEntry['node']        # rosrun pkg node
                 rospy.logdebug('SR2: Found rosrun command for node "%s"', args)
+                icon_type = IconType.type_proc
             elif 'launch' in yamlEntry:
                 # We have a roslaunch command
                 cmd = 'roslaunch'
                 args = yamlEntry['launch']      # roslaunch pkg launch_file
                 if '.launch' not in args:
                     args += '.launch'
-                rospy.logdebug(
-                    'SR2: Found roslaunch command for launch file "%s"', args)
+                icon_type = IconType.type_proc
+                rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', args)
+
             if 'args' in yamlEntry:
                 # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...
                 args1 = yamlEntry['args']
@@ -192,6 +155,7 @@ class SR2PkgCmdExtractor:
             args = yamlEntry['service']
             rospy.logdebug('SR2: Found service "%s"', args)
             args = '/' + args
+            icon_type = IconType.type_srv
             if 'timeout' in yamlEntry:
                 try:
                     timeout = int(yamlEntry['timeout'])
@@ -216,11 +180,13 @@ class SR2PkgCmdExtractor:
                 rospy.logdebug(
                     'SR2: Found arguments for standalone application "%s"', args)
             timeout = 0
+            icon_type = IconType.type_app
         else:
             rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
+            icon_type = IconType.type_none
 
         if 'icon' in yamlEntry:
             icon_path = yamlEntry['icon']
-        icon = IconType.checkImagePath(icon_path, pkg, view)
+        icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         print('ICON: "%s"' % icon)
         return (pkg, cmd, args, icon, timeout)
