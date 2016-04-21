@@ -102,6 +102,7 @@ class IconHelper(object):
     """
     Helper class to easily access images and build QIcons out of lists of file names
     """
+
     def __init__(self, paths=None, name="IconHelper"):
         self._image_paths = paths if paths else []
         self._name = name
@@ -202,9 +203,9 @@ class IconHelper(object):
         """
         Sets up the icon lists for the button states.
         There must be one index in icons for each state.
-        
+
         :raises IndexError: if ``icons`` is not a list of lists of strings
-        
+
         :param icons: A list of lists of strings to create icons for the states of this button.\
         If only one is supplied then ok, warn, error, stale icons will be created with overlays
         :type icons: list
@@ -214,7 +215,8 @@ class IconHelper(object):
         :type suppress_overlays: bool
         """
         if clicked_icons is not None and len(icons) != len(clicked_icons):
-            rospy.logerr("%s: icons and clicked states are unequal" % self._name)
+            rospy.logerr("%s: icons and clicked states are unequal" %
+                         self._name)
             icons = clicked_icons = ['ic-missing-icon.svg']
         if not (type(icons) is list and type(icons[0]) is list and type(icons[0][0] is str)):
             raise(IndexError("icons must be a list of lists of strings"))

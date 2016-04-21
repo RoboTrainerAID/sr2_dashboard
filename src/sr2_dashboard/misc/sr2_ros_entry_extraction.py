@@ -22,8 +22,51 @@ class IconType():
     running = 1
     error = 2
 
+    # TODO Remove this once support of custom icons is added for view entries
     @staticmethod
-    def checkImagePath(icon_path=None, pkg=None, icon_type=type_proc): # change view to icon_type (take type_* values) which will be used to load default icon based on the functionality that the UI component using the image has
+    def loadIcons(name, with_view=False):
+        '''
+        Loads predefined icons
+        '''
+        # Create paths
+        icon_paths = [['sr2_dashboard', 'resources/images']]
+        paths = []
+        rp = rospkg.RosPack()
+        for path in icon_paths:
+            paths.append(os.path.join(rp.get_path(path[0]), path[1]))
+
+        icon_helper = IconHelper(paths, name)
+
+        icons = []
+        res_icons = None
+        converted_icons = []
+
+        # Add icons
+        if with_view:
+            # Inactive view
+            icons.append(['control/menu/diagnostics_inactive.png'])
+            # Active view
+            icons.append(['control/menu/diagnostics_running.png'])
+            icons.append(['control/menu/diagnostics_error.png'])      # Failed
+            rospy.logdebug('SR2: Loaded icons for component with view')
+        else:
+            icons.append(['status/status_inactive.svg'])         # Inactive
+            icons.append(['status/status_running.svg'])          # Active
+            icons.append(['status/status_error.svg'])            # Failed
+            rospy.logdebug('SR2: Loaded icons for component without view')
+
+        res_icons = list(icons)
+        converted_icons = icon_helper.set_icon_lists(icons)
+
+        #converted_clicked_icons = None
+
+        return (converted_icons[0], res_icons)
+
+    @staticmethod
+    # change view to icon_type (take type_* values) which will be used to load
+    # default icon based on the functionality that the UI component using the
+    # image has
+    def checkImagePath(icon_path=None, pkg=None, icon_type=type_proc):
         '''
         Checks if the given icon_path represents a valid path
         Note that loading the image may still fail even if the path is valid in
@@ -41,15 +84,20 @@ class IconType():
             if icon_path:
                 if pkg:
                     # If icon_path doesn't represent a valid file, package is taken into consideration
-                    # and an attempt is made to generate a valid path using it and the value of icon_path combined
+                    # and an attempt is made to generate a valid path using it
+                    # and the value of icon_path combined
                     if not os.path.isfile(icon_path):
-                        rospy.loginfo('SR2: Package argument is present. Attempting to get full path of package and generate new path to icon')
-                        # In case package parameter is set generate a new absolute path that includes the package's path
+                        rospy.logdebug(
+                            'SR2: Package argument is present. Attempting to get full path of package and generate new path to icon')
+                        # In case package parameter is set generate a new
+                        # absolute path that includes the package's path
                         pkg_path = rp.get_path(pkg)
                         icon_path = pkg_path + '/' + icon_path
                     else:
-                        # Since icon_path is a valid path to a file, package is ignored
-                        rospy.loginfo('SR2: Package argument is present however given path is an absolute path referencing a file. Package will be ignored')
+                        # Since icon_path is a valid path to a file, package is
+                        # ignored
+                        rospy.logdebug(
+                            'SR2: Package argument is present however given path is an absolute path referencing a file. Package will be ignored')
 
                 # Check if path points to a valid file (also after the package's path has been added to icon_path)
                 # Note: That if file is valid since type of file is not checked loading it may still fail)
@@ -66,12 +114,14 @@ class IconType():
             rospy.logerr('SR2: Unable to retrieve path for given package')
             error = True
         except Exception as e:
-            rospy.logerr('SR2: Unknown exception occurred during check of path\'s validity.\nFull message: %s', e.message)
+            rospy.logerr(
+                'SR2: Unknown exception occurred during check of path\'s validity.\nFull message: %s', e.message)
             error = True
         finally:
             if error:
                 # Fallback to default
-                rospy.logwarn('SR2: Unable to find image at given path "%s". Falling back to default', icon_path)
+                rospy.logwarn(
+                    'SR2: Unable to find image at given path "%s". Falling back to default', icon_path)
                 sr2path = rp.get_path('sr2_dashboard')
                 if icon_type == IconType.type_view:
                     icon_path = sr2path + '/resources/images/default/default_view.svg'
@@ -85,7 +135,6 @@ class IconType():
                     icon_path = sr2path + '/resources/images/default/default_none.svg'
 
             return icon_path
-
 
 
 class SR2PkgCmdExtractor:
@@ -122,7 +171,6 @@ class SR2PkgCmdExtractor:
         icon_type = None
         timeout = 0
 
-
         if 'package' in yamlEntry:
             # We can have either a rosrun or roslaunch
             pkg = yamlEntry['package']
@@ -140,7 +188,8 @@ class SR2PkgCmdExtractor:
                 if '.launch' not in args:
                     args += '.launch'
                 icon_type = IconType.type_proc
-                rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', args)
+                rospy.logdebug(
+                    'SR2: Found roslaunch command for launch file "%s"', args)
 
             if 'args' in yamlEntry:
                 # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...

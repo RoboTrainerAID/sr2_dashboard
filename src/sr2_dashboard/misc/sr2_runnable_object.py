@@ -64,7 +64,8 @@ class SR2ServiceRunnable(QRunnable):
 
         self.signals.srv_running.emit(True)
         try:
-            # See if service is avialable for a given timeout (default 0: wait until available)
+            # See if service is avialable for a given timeout (default 0: wait
+            # until available)
             rospy.wait_for_service(self.service, self.timeout)
             # If service is found, call the server and receive a response
             trigger_call = rospy.ServiceProxy(self.service, Trigger)

@@ -210,7 +210,8 @@ class SR2Dashboard(Dashboard):
         self.monitor = MonitorDashWidget(self.context)
         self.console = ConsoleDashWidget(self.context, minimal=False)
         pose_icon = IconType.checkImagePath(icon_type=IconType.type_view)
-        self.pose_view = SR2PoseView('Pose View', pose_icon, self.context, minimal=False)
+        self.pose_view = SR2PoseView(
+            'Pose View', pose_icon, self.context, minimal=False)
 
         if self.init:
             try:
@@ -307,7 +308,8 @@ class SR2PoseView(QToolButton):
 
         self.context = context
         self.icon = icon
-        style = 'QToolButton{argin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+        style = 'QToolButton{argin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + \
+            self.icon + '"); background: none;}'
         self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
 

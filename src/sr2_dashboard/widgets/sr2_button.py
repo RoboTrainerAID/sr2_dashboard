@@ -27,7 +27,8 @@ from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 
 # TODO Add button name to PID file to make workers for even same commands plus same arguments produce different files based on which part of the UI (toolbar, view) they belong to
 # TODO Replace IconToolButton with own, add parent attribute in order to properly clean up files and objects; Add stylesheet stuff to the custom QToolButton
-# TODO Pass init-component to view and view-internal widgets to block these two if init ext.process is not running
+# TODO Pass init-component to view and view-internal widgets to block
+# these two if init ext.process is not running
 
 
 class Status():
@@ -66,7 +67,7 @@ class SR2Button():
             # We have an entry that is part of the toolbar
             if yaml_entry_data['type'] == 'noview':
                 pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data[
-                                                                              'menu_entry'])
+                    'menu_entry'])
                 if (not cmd and not pkg and not args and not timeout):
                     return None
                 rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
@@ -94,7 +95,8 @@ class SR2Button():
                 return None
         else:
             # We have an entry that is part of a view
-            pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
+            pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(
+                yaml_entry_data)
             if (not cmd and not pkg and not args and not timeout):
                 return None
             rospy.logdebug('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
@@ -111,17 +113,18 @@ class SR2Button():
 
 ############## QToolButton ############
 
+
 class SR2ToolButton(QToolButton):
 
     '''
     TODO Add own version of IconToolButton
-    :param name:
     '''
-    def __init__(self, name, icons_converted):
+
+    def __init__(self, name, icon, icon_type):
         pass
 
 ##########################################################################
-#########################################################  SR2ButtonExtPro
+# SR2ButtonExtPro
 ##########################################################################
 
 
@@ -134,20 +137,16 @@ class SR2ButtonExtProcess(QToolButton):
     clear_error_signal = pyqtSignal()
 
     # TODO Replace IconToolButton with own version (add parent property!)
-    def __init__(self, name, cmd, pkg, args, icon, parent=None, surpress_overlays=False, minimal=True):
-#        super(SR2ButtonExtProcess, self).__init__(name, icons=_icons[
-#            1], icon_paths=[['sr2_dashboard', 'resources/images']])
+    def __init__(self, name, cmd, pkg, args, icon, parent=None):
         super(SR2ButtonExtProcess, self).__init__()
 
         rospy.logdebug(
             '\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
 
         self.icon = icon
-
-        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
         self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
-        self.minimal = minimal
         self.setObjectName(name)
         self.name = name
         self.setToolTip(self.name)
@@ -236,14 +235,14 @@ class SR2ButtonExtProcess(QToolButton):
         style = ''
         if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
             rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
 #      self.execute_button.setDisabled(False)
             self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
                 (' ' + self.args) if self.args else '') + '"' + ' inactive/finished'
             self.active = False
         elif status == ProcStatus.RUNNING:
             rospy.loginfo('SR2: Status has changed to: RUNNING')
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(89, 205, 139);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
 #      self.execute_button.setDisabled(False)
             self.tooltip = 'Ext.process "' + self.cmd + \
                 ((' ' + self.pkg) if self.pkg else '') + \
@@ -252,7 +251,7 @@ class SR2ButtonExtProcess(QToolButton):
         elif status == ProcStatus.FAILED_START:
             rospy.logerr('SR2: Status has changed to: FAILED_START')
 #      self.execute_button.setDisabled(False)
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(215, 56, 56);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
                 (' ' + self.args) if self.args else '') + '"' + ' failed to start'
             self.statusOkay = False
@@ -261,7 +260,7 @@ class SR2ButtonExtProcess(QToolButton):
         elif status == ProcStatus.FAILED_STOP:
             rospy.logerr('SR2: Status has changed to: FAILED_STOP')
 #      self.execute_button.setDisabled(False)
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(215, 56, 56);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
                 (' ' + self.args) if self.args else '') + '"' + ' failed to stop'
             self.statusOkay = False
@@ -329,7 +328,7 @@ class SR2ButtonExtProcess(QToolButton):
         self.statusOkay = True
 
 ##########################################################################
-########################################################  SR2ButtonInitExt
+# SR2ButtonInitExt
 ##########################################################################
 
 
@@ -375,7 +374,7 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
             self.block_override.emit(True)
         else:
             rospy.loginfo(
-                'SR2: Init ext.process is now running. Connected components will be available to the user')
+                'SR2: Init ext.process is now running. Connected entries can now be used')
             self.block_override.emit(False)
 
     @pyqtSlot()
@@ -393,7 +392,7 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
 #    print('Change event')
 
 ##########################################################################
-#########################################################  SR2ButtonExtPro
+# SR2ButtonExtPro
 ##########################################################################
 
 
@@ -406,7 +405,6 @@ class SR2ViewButtonExtProcess(QWidget):
     clear_error_signal = pyqtSignal()
 
     def __init__(self, name, cmd, pkg, args, icon, parent=None):
-        _icons = IconType.loadIcons(name)
         super(SR2ViewButtonExtProcess, self).__init__(parent)
 
         rospy.logdebug(
@@ -414,16 +412,12 @@ class SR2ViewButtonExtProcess(QWidget):
 
         self.setObjectName(name)
         self.name = name
-        self.icons = _icons[0]
-        #self.setStyleSheet('QToolButton {border: none;}')
-        # self.setToolTip(self.name)
-        #self.setFixedSize(self.icons[0].actualSize(QSize(50, 30)))
+        self.icon = icon
+        style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
 
         self.cmd = cmd
         self.args = args
         self.pkg = pkg
-        self.setWindowTitle('Ext.process "' + self.cmd + ((' ' + self.pkg)
-                                                          if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"')
 
         layout = QVBoxLayout(self)
         layout.setObjectName(name + 'Layout Ext Proc')
@@ -432,42 +426,18 @@ class SR2ViewButtonExtProcess(QWidget):
         spacer = QSpacerItem(40, 20, QSizePolicy.Preferred,
                              QSizePolicy.Preferred)
         controls_layout.addItem(spacer)
-        self.status_label = QLabel(self)
-        self.status_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.status_label.setScaledContents(True)
-        self.status_label.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
-            (' ' + self.args) if self.args else '') + '"' + ' inactive')
-        self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[
-                                    0]))  # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
-        controls_layout.addWidget(self.status_label)
-        self.execute_button = QPushButton('Execute', self)
-#    self.execute_button.setStyleSheet('border-width: 1px;')
+        self.execute_button = QPushButton(self)
+        self.execute_button.setStyleSheet(style)
         self.execute_button.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
+            (' ' + self.args) if self.args else '') + '"' + ' inactive'
+        self.execute_button.setToolTip(self.tooltip)
         controls_layout.addWidget(self.execute_button)
         spacer = QSpacerItem(40, 20, QSizePolicy.Preferred,
                              QSizePolicy.Preferred)
         controls_layout.addItem(spacer)
         layout.addLayout(controls_layout)
-
-        info_layout = QVBoxLayout()
-        line = QFrame(self)
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        info_layout.addWidget(line)
-        cmdL = QLabel('Cmd: ' + self.cmd, self)
-        cmdL.setWordWrap(True)
-        info_layout.addWidget(cmdL)
-        if self.pkg:
-            pkgL = QLabel('Pkg: ' + self.pkg, self)
-            pkgL.setWordWrap(True)
-            info_layout.addWidget(pkgL)
-        if self.args:
-            argsL = QLabel('Args: ' + self.args, self)
-            argsL.setWordWrap(True)
-            info_layout.addWidget(argsL)
-        layout.addLayout(info_layout)
 
         self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
         self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
@@ -482,16 +452,6 @@ class SR2ViewButtonExtProcess(QWidget):
 
         self.setLayout(layout)
         self.resize(layout.sizeHint())
-
-    def onResize(self, event):
-        '''
-        Resize icon in label based on size of parent widget
-        '''
-        # Resize icon of button
-        # OR implement custom button and override paintEvent(event)
-        self.status_label.setIconSize(
-            QSize(self.status_label.width() / 2, self.status_label.height() / 2))
-        super.onResize(event)
 
     def createWorker(self):
         '''
@@ -532,7 +492,7 @@ class SR2ViewButtonExtProcess(QWidget):
         # Start the thread
         self.worker_thread.start()
 
-        self.init_block_enabled = True
+#        self.init_block_enabled = True
 
     def __del__(self):
         if(self.worker_thread.isRunning()):
@@ -554,39 +514,41 @@ class SR2ViewButtonExtProcess(QWidget):
           - **FAILED_START** - occurrs if the attempt to start the process has failed
           - **FAILED_STOP** - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
         '''
-#    print(' --- main thread ID: %d ---' % QThread.currentThreadId())
+        style = ''
         if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
             rospy.loginfo('SR2: Status has changed to: INACTIVE/FINISHED')
-            self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(
-                self.icons[IconType.inactive].availableSizes()[0]))
-#      self.execute_button.setDisabled(False)
-            self.execute_button.setText('Execute')
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+            self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
+                (' ' + self.args) if self.args else '') + '"' + ' inactive/finished'
             self.active = False
         elif status == ProcStatus.RUNNING:
             rospy.loginfo('SR2: Status has changed to: RUNNING')
-            self.status_label.setPixmap(self.icons[IconType.running].pixmap(
-                self.icons[IconType.running].availableSizes()[0]))
-#      self.execute_button.setDisabled(False)
-            self.execute_button.setText('Stop')
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            self.tooltip = 'Ext.process "' + self.cmd + \
+                ((' ' + self.pkg) if self.pkg else '') + \
+                ((' ' + self.args) if self.args else '') + '"' + ' running'
             self.active = True
         elif status == ProcStatus.FAILED_START:
             rospy.logerr('SR2: Status has changed to: FAILED_START')
 #      self.execute_button.setDisabled(False)
-            self.status_label.setPixmap(self.icons[IconType.error].pixmap(
-                self.icons[IconType.error].availableSizes()[0]))
-            self.execute_button.setText('Confirm')
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
+            self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
+                (' ' + self.args) if self.args else '') + '"' + ' failed to start'
             self.statusOkay = False
             self.active = True
             self.toggleControl = False
         elif status == ProcStatus.FAILED_STOP:
             rospy.logerr('SR2: Status has changed to: FAILED_STOP')
 #      self.execute_button.setDisabled(False)
-            self.status_label.setPixmap(self.icons[IconType.error].pixmap(
-                self.icons[IconType.error].availableSizes()[0]))
-            self.execute_button.setText('Confirm')
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
+            self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
+                (' ' + self.args) if self.args else '') + '"' + ' failed to stop'
             self.statusOkay = False
             self.active = True
             self.toggleControl = False
+
+        self.execute_button.setToolTip(self.tooltip)
+        self.execute_button.setStyleSheet(style)
 
     @pyqtSlot(bool)
     def block(self, block_flag):
@@ -599,16 +561,16 @@ class SR2ViewButtonExtProcess(QWidget):
         '''
         self.execute_button.setDisabled(block_flag)
 
-    @pyqtSlot(bool)
-    def block_override(self, block_override_flag):
-        '''
-        If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
-
-        :param block_override_flag: enables/disable click action of button
-
-        Currently blocking the view's components is NOT supported
-        '''
-        self.init_block_enabled = block_override_flag
+#    @pyqtSlot(bool)
+#    def block_override(self, block_override_flag):
+#        '''
+#        If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+#
+#        :param block_override_flag: enables/disable click action of button
+#
+#        Currently blocking the view's components is NOT supported
+#        '''
+#        self.init_block_enabled = block_override_flag
 
     @pyqtSlot()
     def toggle(self):
@@ -619,14 +581,19 @@ class SR2ViewButtonExtProcess(QWidget):
           - **both statusOkay and toggleControl are True** - attempt to start the process
           - **statusOkay is True but toggleControl is False** - attempt to stop the process
         '''
-        if self.init_block_enabled:
-            rospy.logerr(
-                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            return
+#        if self.init_block_enabled:
+#            rospy.logerr(
+#                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+#            return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
             # reset the state by acknowleding the error
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+            self.execute_button.setStyleSheet(style)
+            self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
+                (' ' + self.args) if self.args else '') + '"' + ' inactive/finished'
+            self.execute_button.setToolTip(self.tooltip)
             self.statusOkay = True
             rospy.loginfo('SR2: Error acknowledged')
             self.clear_error_signal.emit()
@@ -648,7 +615,7 @@ class SR2ViewButtonExtProcess(QWidget):
         self.statusOkay = True
 
 ##########################################################################
-######################################################  SR2ToolbarButtonSe
+# SR2ToolbarButtonSe
 ##########################################################################
 # TODO Add error confirm to service buttons (toolbar and view type) like
 # with the external process buttons
@@ -658,11 +625,12 @@ class SR2ButtonService(QToolButton):
     '''
     Part of a toolbar; initiates a service call and reports back once service has replied or timeout
     '''
+
     def __init__(self, name, args, timeout, icon, parent=None, minimal=True):
         super(SR2ButtonService, self).__init__()
 
         self.icon = icon
-        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
         self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
         self.minimal = minimal
@@ -694,7 +662,8 @@ class SR2ButtonService(QToolButton):
         If button is enabled, initiate a service call
         '''
         if self.init_block_enabled:
-            rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+            rospy.logerr(
+                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
             return
 
         if not self.statusOkay:
@@ -711,7 +680,7 @@ class SR2ButtonService(QToolButton):
         else:
             rospy.loginfo(
                 'SR2: Service call is currently being processed. Please wait...')
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(89, 205, 139);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
             self.setStyleSheet(style)
             self.disabled = True
 
@@ -721,7 +690,7 @@ class SR2ButtonService(QToolButton):
         Disables button from futher interaction while service is being called (or until timeout occurs)
         '''
         if state:
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(89, 205, 139);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
             self.setStyleSheet(style)
 
         self.disabled = state
@@ -743,12 +712,12 @@ class SR2ButtonService(QToolButton):
         '''
         style = ''
         if status in [SR2ServiceRunnable.CallStatus.FAILED, SR2ServiceRunnable.CallStatus.SUCCESS_FALSE]:
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(215, 56, 56);}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             self.statusOkay = False
             rospy.logerr('SR2: Calling service %s failed due to "%s"',
                          self.args, msg)
         else:
-            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+            style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
             rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
                           self.args, ('True' if not status else 'False'), msg)
 
@@ -760,7 +729,7 @@ class SR2ButtonService(QToolButton):
 
 
 ##########################################################################
-##########################################################  SR2ViewButtonS
+# SR2ViewButtonS
 ##########################################################################
 class SR2ViewButtonService(QWidget):
     '''
@@ -771,11 +740,12 @@ class SR2ViewButtonService(QWidget):
         '''
         If button is enabled, initiate a service call
         '''
-#    if self.init_block_enabled:
-#      rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-#      return
+        style = ''
         if not self.statusOkay:
-            self.service_caller.setText('Call')
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+            self.service_caller.setStyleSheet(style)
+            self.service_caller.setToolTip(
+                'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's inactive')
             self.statusOkay = True
             rospy.loginfo('SR2: Error acknowledged')
             return
@@ -790,9 +760,11 @@ class SR2ViewButtonService(QWidget):
             rospy.loginfo(
                 'SR2: Service call is currently being processed. Please wait...')
             # self.setIcon(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
-            self.status_label.setPixmap(self.icons[IconType.running].pixmap(
-                self.icons[IconType.running].availableSizes()[0]))
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            self.service_caller.setStyleSheet(style)
             self.disabled = True
+
+        self.service_caller.setStyleSheet(style)
 
     @pyqtSlot(bool)
     def block(self, state):
@@ -801,12 +773,14 @@ class SR2ViewButtonService(QWidget):
         '''
         if state:
             # self.status_label.setPixmap(self.icons[IconType.running].pixmap(self.icons[IconType.running].availableSizes()[0]))
-            self.status_label.setPixmap(self.icons[IconType.running].pixmap(
-                self.icons[IconType.running].availableSizes()[0]))
+#            self.status_label.setPixmap(self.icons[IconType.running].pixmap(
+#                self.icons[IconType.running].availableSizes()[0]))
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            self.service_caller.setStyleSheet(style)
             # FIXME Currently after running a call the "is being processed" is
             # still attached even though the call is inactive
-            self.status_label.setToolTip(
-                'Service call "' + self.args + '" is being processed...')
+            self.service_caller.setToolTip(
+                'Service call "' + self.args + '" with timeout ' + str(self.timeout) + 's is being processed...')
 #      self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: Running...')
             self.service_caller.setDisabled(True)
 
@@ -818,45 +792,35 @@ class SR2ViewButtonService(QWidget):
         Based on the success status returned by the service call (SUCCESS_TRUE, SUCCESS_FALSE, FAILED)
         the button is enabled and changes its icon while the test of the status label displays information on how the service call went
         '''
-        if status in [SR2ServiceRunnable.CallStatus.SUCCESS_TRUE, SR2ServiceRunnable.CallStatus.SUCCESS_FALSE]:
-            # self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[0]))
-            self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(
-                self.icons[IconType.inactive].availableSizes()[0]))
-            rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
-                          self.args, ('True' if not status else 'False'), msg)
-            self.reply_statL.setText('Reply status: ' + ('True' if status ==
-                                                         SR2ServiceRunnable.CallStatus.SUCCESS_TRUE else 'False'))
-            self.reply_msgL.setText('Reply message: ' + msg)
-        else:
-            self.status_label.setPixmap(self.icons[IconType.error].pixmap(
-                self.icons[IconType.error].availableSizes()[0]))
+        style = ''
+        if status in [SR2ServiceRunnable.CallStatus.FAILED, SR2ServiceRunnable.CallStatus.SUCCESS_FALSE]:
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             rospy.logerr(
                 'SR2: Calling service %s failed due to "%s"', self.args, msg)
             self.reply_statL.setText(
                 'Reply status: <font color=\"red\">Error</font>')
             self.reply_msgL.setText(
                 'Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
-            self.service_caller.setText('Confirm')
             self.statusOkay = False
+            self.service_caller.setToolTip(
+            'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's failed')
+        else:
+            style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
+                          self.args, ('True' if not status else 'False'), msg)
+            self.reply_statL.setText('Reply status: ' + ('True' if status ==
+                                                         SR2ServiceRunnable.CallStatus.SUCCESS_TRUE else 'False'))
+            self.reply_msgL.setText('Reply message: ' + msg)
+            self.service_caller.setToolTip(
+                'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's successful')
 
+        self.service_caller.setStyleSheet(style)
         self.service_caller.setDisabled(False)
-#    self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: ' + msg)
-
-#  @pyqtSlot(bool)
-#  def block_override(self, block_override_flag):
-#    '''
-#    If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
-#
-#    :param block_override_flag: enables/disable click action of button
-#    '''
-#    self.init_block_enabled = block_override_flag
 
     def __init__(self, name, args, timeout, icon, parent=None):
         super(SR2ViewButtonService, self).__init__(parent)
 
-        _icons = IconType.loadIcons(name)
-        self.icons = _icons[0]
-
+        self.icon = icon
         self.args = args
         self.timeout = timeout
         self.name = name
@@ -869,16 +833,11 @@ class SR2ViewButtonService(QWidget):
         spacer = QSpacerItem(40, 20, QSizePolicy.Preferred,
                              QSizePolicy.Preferred)
         controls_layout.addItem(spacer)
-        self.status_label = QLabel(self)
-        self.status_label.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.status_label.setScaledContents(True)
-        self.status_label.setToolTip(
-            'Service call "' + self.args + '" inactive')
-        self.status_label.setPixmap(self.icons[IconType.inactive].pixmap(self.icons[IconType.inactive].availableSizes()[
-                                    0]))  # Convert icon to pixmap: http://stackoverflow.com/a/27057295/1559401
-        controls_layout.addWidget(self.status_label)
-        self.service_caller = QPushButton('Call', self)
+        self.service_caller = QPushButton(self)
+        style = 'QPushButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+        self.service_caller.setStyleSheet(style)
+        self.service_caller.setToolTip(
+            'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's inactive')
         self.service_caller.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
         controls_layout.addWidget(self.service_caller)
@@ -892,12 +851,6 @@ class SR2ViewButtonService(QWidget):
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         info_layout.addWidget(line)
-        serviceL = QLabel('Service: ' + self.args, self)
-        serviceL.setWordWrap(True)
-        info_layout.addWidget(serviceL)
-        timeoutL = QLabel('Timeout: ' + str(timeout) + 's', self)
-        timeoutL.setWordWrap(True)
-        info_layout.addWidget(timeoutL)
         self.reply_statL = QLabel('Reply status:', self)
         self.reply_statL.setWordWrap(True)
         info_layout.addWidget(self.reply_statL)
@@ -905,8 +858,6 @@ class SR2ViewButtonService(QWidget):
         self.reply_msgL.setWordWrap(True)
         info_layout.addWidget(self.reply_msgL)
         layout.addLayout(info_layout)
-
-        self.setWindowTitle('Service "' + self.args + '"')
 
         self.thread_pool = QThreadPool(self)
         self.service = SR2ServiceRunnable(self.args, self.timeout)
@@ -922,15 +873,8 @@ class SR2ViewButtonService(QWidget):
         self.setLayout(layout)
         self.resize(layout.sizeHint())
 
-    def onResize(self, event):
-        # Resize icon of button
-        # OR implement custom button and override paintEvent(event)
-        self.service_caller.setIconSize(
-            QSize(self.service_caller.width() / 2, self.service_caller.height() / 2))
-        super.onResize(event)
-
 ##########################################################################
-######################################################  SR2ToolbarButtonWi
+# SR2ToolbarButtonWi
 ##########################################################################
 
 
@@ -1006,12 +950,14 @@ class SR2ButtonWithView(QToolButton):
 
         self.icon = ''
         if 'icon' in yaml_entry_data:
-            # Set icon: IconType.checkImagePath(yaml_entry_data['icon'], view=True)
-            self.icon = IconType.checkImagePath(yaml_entry_data['icon'], icon_type=IconType.type_view)
+            # Set icon: IconType.checkImagePath(yaml_entry_data['icon'],
+            # view=True)
+            self.icon = IconType.checkImagePath(
+                yaml_entry_data['icon'], icon_type=IconType.type_view)
         else:
             self.icon = IconType.checkImagePath(icon_type=IconType.type_view)
 
-        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+        style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
         self.setStyleSheet(style)
 
         try:
@@ -1022,7 +968,8 @@ class SR2ButtonWithView(QToolButton):
             if not self.yaml_view_buttons:
                 raise Exception('Empty button list')
         except (YAMLError, Exception):
-            rospy.logerr('SR2: Detected menu entry with view which does not contain any buttons. Generated view will be empty')
+            rospy.logerr(
+                'SR2: Detected menu entry with view which does not contain any buttons. Generated view will be empty')
 
 #    self._plugin_settings = None
 #    self._instance_settings = None
@@ -1079,23 +1026,25 @@ class SR2ButtonWithView(QToolButton):
                     self.context.remove_widget(self.view_widget)
                     self.close()
 #                    self.setIcon(self._icons[IconType.inactive])
-                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: none;}'
+                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
                     rospy.logdebug('SR2: Closed SR2View "%s"', self.name)
                 else:
                     # If menu entry doesn't display a view, create it and
                     # display it
                     self.toggled = True
 #                    self.setIcon(self._icons[IconType.running])
-                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(89, 205, 139);}'
+                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
                     rospy.logdebug('SR2: Added SR2View "%s"', self.name)
-                    self.view_widget = SR2ButtonWithView.SR2View(self.name, self.yaml_view_buttons)
+                    self.view_widget = SR2ButtonWithView.SR2View(
+                        self.name, self.yaml_view_buttons)
 
                     self.context.add_widget(self.view_widget)
             except Exception as e:
                 if not self.view_widget:
-#                    self.setIcon(self._icons[IconType.error])
-                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; border-image: url("' + self.icon  + '"); background: rgb(215, 56, 56);}'
-                    rospy.logerr('SR2: Error during showing SR2View : %s', e.message)
+                    #                    self.setIcon(self._icons[IconType.error])
+                    style = 'QToolButton{margin-top: 3; margin-bottom: 3; margin-right: 3; margin-left: 3; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
+                    rospy.logerr(
+                        'SR2: Error during showing SR2View : %s', e.message)
                 self.toggled = False
             finally:
                 self.setStyleSheet(style)
