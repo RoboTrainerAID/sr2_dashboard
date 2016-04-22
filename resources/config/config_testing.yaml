@@ -89,6 +89,23 @@ dashboard:
             # Buttons for view toggled by menu entry 1 in menu 1
             # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
 
+        # module 2
+        - name: "Testing"
+          type: "view"
+          # menu entry 2 in menu 1
+          menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - package: "lt"
+                launch: "talker"
+              - package: "lt"
+                launch: "listener"
+              - package: "lt"
+                launch: "listener"
+              - service: "trigger_srv"
+              - service: "trigger_srv"
+              - service: "trigger_srv"
+
         # module 4
         - name: "Call Trigger Service Server"
           type: "noview"
