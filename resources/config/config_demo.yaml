@@ -22,28 +22,29 @@ dashboard:
           type: "view"
           # menu entry 2 in menu 1
           menu_entry:
+            buttons:
             # Buttons for view toggled by menu entry 2 in menu 1
-            # button 1
-            - service: "trigger_srv"
-              timeout: 10
-            # button 2
-            - package: "lt"
-              launch: "talker"
+              # button 1
+              - service: "trigger_srv"
+                timeout: 10
+              # button 2
+              - package: "lt"
+                launch: "talker"
               #args: "some options" # Optional
-            # button 3
-            - service: "trigger_srv"
-            # button 4
-            - service: "trigger_srv"
-            # button 5
-            - service: "trigger_srv"
-            # button 6
-            - package: "lt"
-              launch: "listener"
-              #args: "some options" # Optional
-            # button 7
-            - service: "trigger_srv"
-            - service: "trigger_srv"
-            - service: "trigger_srv"
+              # button 3
+              - service: "trigger_srv"
+              # button 4
+              - service: "trigger_srv"
+              # button 5
+              - service: "trigger_srv"
+              # button 6
+              - package: "lt"
+                launch: "listener"
+                #args: "some options" # Optional
+              # button 7
+              - service: "trigger_srv"
+              - service: "trigger_srv"
+              - service: "trigger_srv"
 
     # menu 2
     - modules:
