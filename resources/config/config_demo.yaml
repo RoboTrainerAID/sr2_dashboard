@@ -1,10 +1,10 @@
 dashboard:
-  init:
-    name: "SR2 Bringup"
-    type: "noview"
-    menu_entry:
-      package: "sr2_bringup"
-      launch: "robot"
+#  init:
+#    name: "SR2 Bringup"
+#    type: "noview"
+#    menu_entry:
+#      package: "sr2_bringup"
+#      launch: "robot"
 
   menus:
     - modules:
