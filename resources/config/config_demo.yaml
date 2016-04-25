@@ -23,7 +23,7 @@ dashboard:
                 launch: "navigation"
               - package: "drive_program"
                 launch: "combine.launch"
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/drive/drive_program.svg"
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/drive/drive_program.svg"
                 # Author: https://www.iconfinder.com/bogdanrosu
                 package: "drive_program"
                 node: "drive_program"
