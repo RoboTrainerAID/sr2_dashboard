@@ -8,116 +8,61 @@ dashboard:
 
   menus:
     - modules:
-        - name: "Mapping/Navtion View"
+        - name: "Mapping, Navigation and Drive"
           type: "view"
-          menu_entry: # describes what the entry will launch (a process or a view)
-            - package: "sr2_bringup"
-              launch: "mapping"
-            - package: "sr2_bringup"
-              launch: "navigation"
+          menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/mapping.svg" 
+                # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
+                package: "sr2_bringup"
+                launch: "mapping"
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/navigation.svg"
+                # Author: https://www.iconfinder.com/mrpixel
+                package: "sr2_bringup"
+                launch: "navigation"
+              - package: "drive_program"
+                launch: "combine.launch"
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/drive/drive_program.svg"
+                # Author: https://www.iconfinder.com/bogdanrosu
+                package: "drive_program"
+                node: "drive_program"
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/init/cob_bringup.svg"
+                # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
+                package: "cob_bringup"
+                launch: "robot"
 
-
-        # module 2
         - name: "Person Tracking View"
           type: "view"
-          # menu entry 2 in menu 1
           menu_entry:
             buttons:
-            # Buttons for view toggled by menu entry 2 in menu 1
-              # button 1
               - service: "trigger_srv"
                 timeout: 10
-              # button 2
               - package: "lt"
                 launch: "talker"
-              #args: "some options" # Optional
-              # button 3
               - service: "trigger_srv"
-              # button 4
               - service: "trigger_srv"
-              # button 5
               - service: "trigger_srv"
-              # button 6
               - package: "lt"
                 launch: "listener"
-                #args: "some options" # Optional
-              # button 7
               - service: "trigger_srv"
               - service: "trigger_srv"
               - service: "trigger_srv"
-
-    # menu 2
     - modules:
-        # A module is represented by its menu_entry-entities which can optionally (if type=="view") open a view
-
-        # module 3
-        - name: "Listener"
-
-          # If type is 'noview' buttons-node will be skipped entirely
-          # If type is 'view' buttons will be parsed and a widget will be created for each button which will then be added to a grid view
-          type: "noview"
-          # menu entry 1 in menu 2
-          menu_entry:
-            # If type is 'noview' the menu entry acts as a command trigger (Trigger.srv if "service" else a ROS standalone application ("rqt_graph", "rqt_tf_tree" etc.))
-            # If type is 'view' the menu entry will not contain any of the nodes below but instead all buttons will be used to generate the UI
-            package: "lt"
-
-            # node | launch | service | app
-            # node -> execute 'rosrun'
-            # launch -> execute 'roslaunch' (roslaunch allows multiple files to be launched through the same parent process)
-            # service -> execute a 'rosservice call' command (currently only Trigger services are supported; initial states is always set to False)
-            # app -> execute a standalone application ('rqt_graph', 'rqt_tf_tree' etc.(non-ROS applications are also supported!))
-            node: "listener.py"
-            #args: "some options" # Optional
-
-            # Buttons for view toggled by menu entry 1 in menu 1
-            # NONE (we have type "noview" so even if we specify some buttons here the command/pkg/file specified in menu entry are the only ones that matter)
-
-        # module 4
         - name: "Call Trigger Service Server"
           type: "noview"
-          # menu entry 2 in menu 2
           menu_entry:
             service: "trigger_srv"
             timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
 
-        # module 5
         - name: "Launch Trigger Service Server"
           type: "noview"
-          # menu entry 3 in menu 2
           menu_entry:
             package: "testing"
             node: "trigger_srv_server.py"
 
-    # menu 3
     - modules:
-        # WARNING: some application behave differently based on whether a current instance of that same application is running or not (example: firefox)
-        # module 5
         - name: "RQT Graph"
           type: "noview"
-          # menu entry 1 in menu 3
           menu_entry: #rqt_graph, rqt_console
-            app: "rqt_graph" # Arguments can be included inside the string; all arguments have to be separated by the command by a space
-                             # Example: "firefox -new-tab www.google.com" will be split into: cmd="firefox" and args="-new-tab www.google.com
-        # module 6
-        - name: "Firefox Google"
-          type: "noview"
-          # menu entry 1 in menu 3
-          menu_entry:
-            app: "firefox"
-            args: "-new-window www.google.com"
-        # module 7
-        - name: "Editor"
-          type: "noview"
-          # menu entry 1 in menu 3
-          menu_entry:
-            app: "gedit"
-
-
-###############################################################################################################################################
-############################################################## OLD DOCUMENTATION ##############################################################
-###############################################################################################################################################
-#Note: names have to be unique because they are used as building components for the PID files! Also the dashboard requires unique names
-#Note: resources for a button have to be located inside a resource directory inside the ROS package that the button uses
-
-# WRITE DOCUMENTATION
+            app: "rqt_graph" # Arguments can be included inside an args YAML node
