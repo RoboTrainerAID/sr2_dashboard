@@ -445,6 +445,21 @@ class SR2ViewButtonExtProcess(QWidget):
         controls_layout.addItem(spacer)
         layout.addLayout(controls_layout)
 
+        if 'default_' in self.icon:
+            info_layout = QVBoxLayout()
+            service_nameL = QLabel(self)
+            if self.cmd not in ['roslaunch', 'rosrun']:
+                service_nameL.setText('App: ' + self.cmd)
+            else:
+                service_nameL.setText('External process: ' + self.args.replace('.launch', ''))
+            service_nameL.setWordWrap(True)
+            info_layout.addWidget(service_nameL)
+            line = QFrame(self)
+            line.setFrameShape(QFrame.HLine)
+            line.setFrameShadow(QFrame.Sunken)
+            info_layout.addWidget(line)
+            layout.addLayout(info_layout)
+
         self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
         self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
         self.toggleControl = False
@@ -879,16 +894,20 @@ class SR2ViewButtonService(QWidget):
         layout.addLayout(controls_layout)
 
         info_layout = QVBoxLayout()
-        line = QFrame(self)
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        info_layout.addWidget(line)
+        if 'default_' in self.icon:
+            service_nameL = QLabel('Service: ' + self.args, self)
+            service_nameL.setWordWrap(True)
+            info_layout.addWidget(service_nameL)
         self.reply_statL = QLabel('Reply status:', self)
         self.reply_statL.setWordWrap(True)
         info_layout.addWidget(self.reply_statL)
         self.reply_msgL = QLabel('Reply message:', self)
         self.reply_msgL.setWordWrap(True)
         info_layout.addWidget(self.reply_msgL)
+        line = QFrame(self)
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        info_layout.addWidget(line)
         layout.addLayout(info_layout)
 
         self.thread_pool = QThreadPool(self)

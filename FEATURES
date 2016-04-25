@@ -1,6 +1,8 @@
 1) Timeout for services set 0 (check docs rospy.wait_for_service(...))
   --> Actually this might be useful. The service call request is sent AFTER checking if the service is actually available
 2) Custom icons
+  --> If default icon is used in a view entry show name (add "name" YAML node to view entities like with menu_entry)
+  --> If name doesn't exists generate automatically (see piece of paper)
 3) Rework view widgets for ext. process and service calls: merge the status label with the button; put metadata (package, node, service name etc.) as button's tooltip
 4) Mapping view
 5) Rviz widget (without Time view at the bottom)
@@ -9,10 +11,3 @@
 6) Define width/height of widgets in context
 7) Add custom widgets
   --> This has always been possible but requires the user to become a developer and do it him-/herself
-
-
-----------------------------
-roslaunch
-
-	sr2_bringup navigation.launch
-	drive_program combine.launch
