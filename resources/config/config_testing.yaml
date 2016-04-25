@@ -1,3 +1,6 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: YAML configuration file for the SR2 Dashboard used for testing new features or fixes
+
 dashboard:
 #  init: # Critical component representing an external process that is crucial
 #        # for the proper working of the whole system. Until it is running the
@@ -17,7 +20,7 @@ dashboard:
         - name: "Talker"
           type: "noview"
           menu_entry:
-            icon: "hello.svg"
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
             package: "lt"
             node: "talker.py"
             #args: "some options" # Optional
@@ -34,6 +37,7 @@ dashboard:
               - package: "lt"
                 launch: "talker"
               - service: "trigger_srv"
+                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
               - service: "trigger_srv"
               - service: "trigger_srv"
               - package: "lt"

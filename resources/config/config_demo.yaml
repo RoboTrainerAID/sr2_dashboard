@@ -1,3 +1,6 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: YAML configuration file for the SR2 Dashboard when running on the SR2 mobile platform
+
 dashboard:
 #  init:
 #    name: "SR2 Bringup"
@@ -13,7 +16,7 @@ dashboard:
           menu_entry:
             icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/mapping.svg" 
+              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/mapping.svg"
                 # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
                 package: "sr2_bringup"
                 launch: "mapping"

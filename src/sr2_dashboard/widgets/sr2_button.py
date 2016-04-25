@@ -9,9 +9,8 @@ from yaml import YAMLError
 from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
-# from PyQt4.QtSvg import QSvgRenderer # TODO Add support for SVG for the
-# icons and pixmaps: http://stackoverflow.com/a/35138314/1559401 |
-# http://www.qtcentre.org/threads/7321-Loading-SVG-icons
+# from PyQt4.QtSvg import QSvgRenderer
+# NOTE: If icons and pixmaps are to be used at some point in the future see http://stackoverflow.com/a/35138314/1559401 for SVG rendering as well as http://www.qtcentre.org/threads/7321-Loading-SVG-icons
 
 import roslib
 roslib.load_manifest('sr2_dashboard')
@@ -57,7 +56,7 @@ class SR2Button():
         :param context: dashboard context used for adding a view to the dashboard
         :param yaml_entry_data: a valid YAML node which represents an entry in eithere a menu or a view
         :param name: uniquely generated name used as object name. Note: if name is not unique there will be a conflict between widgets that are part of the same toolbar or view
-        :param display_name: optional name displayed in view components; if not present, display name is automatically generated; name is also only then visible whenever default icon is used for a view entry
+        :param display_name: optional name displayed used only by view entries; if not present, display name is automatically generated; this name is also only then visible whenever default icon is used
         '''
         if not yaml_entry_data:
             return None
