@@ -54,7 +54,8 @@ dashboard:
           menu_entry:
             icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - package: "sr2_bringup"
+              - name: "SR2 Mapping"
+                package: "sr2_bringup"
                 launch: "mapping"
               - package: "sr2_bringup"
                 launch: "navigation"
@@ -62,7 +63,8 @@ dashboard:
                 launch: "combine.launch"
               - package: "drive_program"
                 node: "drive_program"
-              - package: "cob_bringup"
+              - name: "COB Bringup Initialization"
+                package: "cob_bringup"
                 launch: "robot"
         - name: "Call Trigger Service Server"
           type: "noview"

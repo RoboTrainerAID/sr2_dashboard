@@ -43,7 +43,7 @@ class Status():
 class SR2Button():
 
     @staticmethod
-    def createButton(context, yaml_entry_data, name, parent=None, init=False, init_widget=None):
+    def createButton(context, yaml_entry_data, name, display_name=None, parent=None, init=False, init_widget=None):
         '''
         Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
 
@@ -53,6 +53,11 @@ class SR2Button():
           - **SR2ButtonService** (subclass of QPushButton; for toolbar) - a menu entry that calls a ROS Trigger-based service and displays its reply
           - **SR2ViewButtonService** (subclass of QWidget; for view) - a view entry that calls a ROS Trigger-based service and displays its reply
           - **SR2ToolbarButtonWithView** (subclass of QToolButton; for toolbar) - a menu entry that opens a view in the main view of the SR2 Dashaboard
+
+        :param context: dashboard context used for adding a view to the dashboard
+        :param yaml_entry_data: a valid YAML node which represents an entry in eithere a menu or a view
+        :param name: uniquely generated name used as object name. Note: if name is not unique there will be a conflict between widgets that are part of the same toolbar or view
+        :param display_name: optional name displayed in view components; if not present, display name is automatically generated; name is also only then visible whenever default icon is used for a view entry
         '''
         if not yaml_entry_data:
             return None
@@ -106,10 +111,10 @@ class SR2Button():
                     rospy.logerr(
                         'SR2: Trying to create noview service button but service target is empty')
                     return None
-                return SR2ViewButtonService(name, args, timeout, icon, parent)
+                return SR2ViewButtonService(name, display_name, args, timeout, icon, parent)
             else:
                 # External process (roslaunch, rosrun or app)
-                return SR2ViewButtonExtProcess(name, cmd, pkg, args, icon, parent)
+                return SR2ViewButtonExtProcess(name, display_name, cmd, pkg, args, icon, parent)
 
 ############## QToolButton ############
 
@@ -404,7 +409,7 @@ class SR2ViewButtonExtProcess(QWidget):
     stop_signal = pyqtSignal()
     clear_error_signal = pyqtSignal()
 
-    def __init__(self, name, cmd, pkg, args, icon, parent=None):
+    def __init__(self, name, display_name, cmd, pkg, args, icon, parent=None):
         super(SR2ViewButtonExtProcess, self).__init__(parent)
 
         rospy.logdebug(
@@ -444,9 +449,15 @@ class SR2ViewButtonExtProcess(QWidget):
             info_layout = QVBoxLayout()
             service_nameL = QLabel(self)
             if self.cmd not in ['roslaunch', 'rosrun']:
-                service_nameL.setText('App: ' + self.cmd)
+                if display_name:
+                    service_nameL.setText('App: ' + display_name)
+                else:
+                    service_nameL.setText('App: ' + self.cmd)
             else:
-                service_nameL.setText('External process: ' + self.args.replace('.launch', ''))
+                if display_name:
+                    service_nameL.setText('External process: ' + display_name)
+                else:
+                    service_nameL.setText('External process: ' + self.args.replace('.launch', ''))
             service_nameL.setWordWrap(True)
             info_layout.addWidget(service_nameL)
             line = QFrame(self)
@@ -845,7 +856,7 @@ class SR2ViewButtonService(QWidget):
         self.service_caller.setStyleSheet(style)
         self.service_caller.setDisabled(False)
 
-    def __init__(self, name, args, timeout, icon, parent=None):
+    def __init__(self, name, display_name, args, timeout, icon, parent=None):
         super(SR2ViewButtonService, self).__init__(parent)
 
         self.icon = icon
@@ -932,8 +943,11 @@ class SR2ButtonWithView(QToolButton):
             self.buttons = []
             idx = 0
             for yaml_button_entry in yaml_button_list:
+                display_name = None
+                if 'name' in yaml_button_entry:
+                    display_name = yaml_button_entry['name']
                 button = SR2Button.createButton(
-                    None, yaml_button_entry, name + str(idx), self)
+                    None, yaml_button_entry, name + str(idx), display_name, self)
                 if not button:
                     continue
                 self.buttons.append(button)
