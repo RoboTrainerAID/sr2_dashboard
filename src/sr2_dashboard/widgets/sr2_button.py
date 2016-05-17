@@ -125,7 +125,16 @@ class SR2ToolButton(QToolButton):
     '''
 
     def __init__(self, name, icon, icon_type):
-        pass
+        self.icon = icon
+        style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
+            self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
+        self.setObjectName(name)
+        self.name = name
+        self.setToolTip(self.name)
+
+        # Todo ...
 
 ##########################################################################
 # SR2ButtonExtPro
