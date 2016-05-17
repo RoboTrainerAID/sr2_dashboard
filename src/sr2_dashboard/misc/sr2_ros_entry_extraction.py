@@ -82,6 +82,8 @@ class IconType():
 
         try:
             if icon_path:
+                if icon_path.startswith('~'):
+                    icon_path = os.path.expanduser(icon_path)
                 if pkg:
                     # If icon_path doesn't represent a valid file, package is taken into consideration
                     # and an attempt is made to generate a valid path using it
@@ -236,5 +238,6 @@ class SR2PkgCmdExtractor:
 
         if 'icon' in yamlEntry:
             icon_path = yamlEntry['icon']
+            print('---------ICON_PATH : %s',icon_path)
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         return (pkg, cmd, args, icon, timeout)

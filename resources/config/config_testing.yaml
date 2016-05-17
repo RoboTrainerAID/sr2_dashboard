@@ -20,7 +20,7 @@ dashboard:
         - name: "Talker"
           type: "noview"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
             package: "lt"
             node: "talker.py"
             #args: "some options" # Optional
@@ -28,7 +28,7 @@ dashboard:
         - name: "CoB Bringup"
           type: "view"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
               - service: "trigger_srv"
                 timeout: 10
@@ -37,13 +37,13 @@ dashboard:
               - package: "lt"
                 launch: "talker"
               - service: "trigger_srv"
-                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
+                icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
               - service: "trigger_srv"
               - service: "trigger_srv"
               - package: "lt"
                 launch: "listener"
               - service: "trigger_srv"
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/calculator.svg"
+              - icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/calculator.svg"
                 app: "gnome-calculator"
 
     - modules:
@@ -52,11 +52,11 @@ dashboard:
           menu_entry:
             package: "lt"
             node: "listener.py"
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
         - name: "Testing"
           type: "view"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
               - name: "SR2 Mapping"
                 package: "sr2_bringup"
@@ -78,7 +78,7 @@ dashboard:
         - name: "Launch Trigger Service Server"
           type: "noview"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
             package: "testing"
             node: "trigger_srv_server.py"
 
@@ -92,16 +92,16 @@ dashboard:
         - name: "Firefox Google"
           type: "noview"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
             app: "firefox"
             args: "-new-window www.google.com"
         - name: "Editor"
           type: "noview"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/gedit.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/gedit.svg"
             app: "gedit"
         - name: "Eclipse"
           type: "noview"
           menu_entry:
-            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/eclipse.svg"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/eclipse.svg"
             app: "eclipse"
