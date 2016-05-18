@@ -7,7 +7,7 @@
 
 
 
-LAYOUT -- Currently unable to find a way to setup layout from code
+LAYOUT -- Currently unable to find a way to setup layout from code inside the dashboard. Manual alignment by dragging the dockable widgets is of course provided by the Rqt plugin infrastructure
 left: put 4)
 top: open/close views, statusbar
 right+center: views (1),2),3))

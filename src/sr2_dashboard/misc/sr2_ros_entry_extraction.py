@@ -22,46 +22,6 @@ class IconType():
     running = 1
     error = 2
 
-    # TODO Remove this once support of custom icons is added for view entries
-    @staticmethod
-    def loadIcons(name, with_view=False):
-        '''
-        Loads predefined icons
-        '''
-        # Create paths
-        icon_paths = [['sr2_dashboard', 'resources/images']]
-        paths = []
-        rp = rospkg.RosPack()
-        for path in icon_paths:
-            paths.append(os.path.join(rp.get_path(path[0]), path[1]))
-
-        icon_helper = IconHelper(paths, name)
-
-        icons = []
-        res_icons = None
-        converted_icons = []
-
-        # Add icons
-        if with_view:
-            # Inactive view
-            icons.append(['control/menu/diagnostics_inactive.png'])
-            # Active view
-            icons.append(['control/menu/diagnostics_running.png'])
-            icons.append(['control/menu/diagnostics_error.png'])      # Failed
-            rospy.logdebug('SR2: Loaded icons for component with view')
-        else:
-            icons.append(['status/status_inactive.svg'])         # Inactive
-            icons.append(['status/status_running.svg'])          # Active
-            icons.append(['status/status_error.svg'])            # Failed
-            rospy.logdebug('SR2: Loaded icons for component without view')
-
-        res_icons = list(icons)
-        converted_icons = icon_helper.set_icon_lists(icons)
-
-        #converted_clicked_icons = None
-
-        return (converted_icons[0], res_icons)
-
     @staticmethod
     # change view to icon_type (take type_* values) which will be used to load
     # default icon based on the functionality that the UI component using the
@@ -238,6 +198,5 @@ class SR2PkgCmdExtractor:
 
         if 'icon' in yamlEntry:
             icon_path = yamlEntry['icon']
-            print('---------ICON_PATH : %s',icon_path)
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         return (pkg, cmd, args, icon, timeout)

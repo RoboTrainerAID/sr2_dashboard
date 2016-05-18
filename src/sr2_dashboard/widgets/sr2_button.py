@@ -1031,7 +1031,8 @@ class SR2ButtonWithView(QToolButton):
         self.context = context
         self.setToolTip(self.name)
         self.setFixedSize(QSize(36, 36))
-#        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
+        #self.setFixedSize(QSize(80, 80))
+        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
 
 
         self.close_mutex = QMutex()

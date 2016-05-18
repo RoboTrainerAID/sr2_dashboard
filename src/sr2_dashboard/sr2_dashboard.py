@@ -28,7 +28,7 @@ from yaml import YAMLError
 from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton
 
 # QtCore modules
-from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot, pyqtSignal
+from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot, pyqtSignal, QEvent, QObject
 
 # SR2 widgets
 # from widgets.sr2_menu_entry import SR2MenuEntryWidget as sr2me #### OLD
@@ -146,19 +146,49 @@ class TestWidgetSR2MenuEntry(IconToolButton):
 # successful or not (use kill -0 PID to check every N seconds if roslaunch
 # process is running)
 
+#class SR2DashboardEventFilter(QObject):
+#    def __init__(self, parent=None):
+#        super(SR2DashboardEventFilter, self).__init__(parent)
+#
+#    def eventFilter(self, receiver, event):
+#        print('Received event:')
+#        print('  @Type: %d' % event.type())
+#        print('  @Child name: %s' % event.child().objectName())
+#        if event.type() == QEvent.Resize:
+#            print('Received resize event')
+#
+#        return super(SR2DashboardEventFilter, self).eventFilter(receiver, event)
+
 class SR2Dashboard(Dashboard):
     '''
     Contains a CoB/PR2-like dashboard with functionality that is used for controlling and monitoring the SR2 platform
     '''
-    __block_override_reset = pyqtSignal(
-        bool)  # All entities that support init block override are blocked initially. This signal is emitted if Init entry in YAML config file is not present in order to unblock all entities
+    # All entities that support init block override are blocked initially. This signal is emitted if Init entry in YAML config file is not present in order to unblock all entities
+    __block_override_reset = pyqtSignal(bool)
+
+    def __init__(self, context):
+        rospy.loginfo('SR2: Starting dashboard')
+
+        super(SR2Dashboard, self).__init__(context)
+        self.context = context
+#        self.setup(context)
 
     def setup(self, context):
-        rospy.loginfo('SR2: Starting dashboard')
         self.name = 'SR2Dashboard'
-        self.context = context
+#        self.context.installEventFilter(self)
+#        self.installEventFilter(self.resizeFilter)
+#        self.installEventFilter(self)
+
+#        self.resizeFilter = SR2DashboardEventFilter()
+#        super(SR2Dashboard, self)._main_widget.installEventFilter(self.resizeFilter)
+#        for super_member in vars(super(SR2Dashboard, self)): # vars(super(SR2Dashboard, self)):
+#            print('Super member: %s' % super_member)
+
         self.yFile = None
         self.widgets = []
+
+        # TODO After filtering the resize even from filter adjust the icon size of the toolbar accordingly inside the event filter function
+#        self.max_icon_size = QSize(80, 80) # Adjust max size for all buttons in the _main_widget toolbar
 
         # Statusbar
 #        self.status_bar = QStatusBar()
@@ -197,6 +227,15 @@ class SR2Dashboard(Dashboard):
 
         # Populate the self.widgets list
         self.generate_widgets()
+
+    def eventFilter(self, receiver, event):
+        print('Received event %d' % event.type())
+        if receiver is self.context:
+            print('Receiver is CONTEXT')
+                print('Received event for CONTEXT is RESIZE')
+            if event.type() == QEvent.Resize:
+
+        return super(SR2Dashboard, self).eventFilter(receiver, event)
 
     def generate_widgets(self):
         '''
@@ -332,7 +371,6 @@ class SR2PoseView(QToolButton):
             return
 
         if self.pose_view is None:
-            print('PoseView')
             # Curse Plugin argument for the constructor...
             self.pose_view = PoseViewWidget(None)
         try:
