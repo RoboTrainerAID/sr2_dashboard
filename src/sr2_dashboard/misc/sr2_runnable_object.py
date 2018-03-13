@@ -3,7 +3,7 @@
 
 import rospy
 from std_srvs.srv import Trigger
-from PyQt4.QtCore import QRunnable, pyqtSignal, QObject
+from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
 
 
 class ServiceCallSignals(QObject):

@@ -25,7 +25,8 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton
+#from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton
+from python_qt_binding.QtWidgets import QStatusBar, QToolBar, QToolButton
 
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QSize, pyqtSlot, pyqtSignal, QEvent, QObject
@@ -232,8 +233,8 @@ class SR2Dashboard(Dashboard):
         print('Received event %d' % event.type())
         if receiver is self.context:
             print('Receiver is CONTEXT')
-                print('Received event for CONTEXT is RESIZE')
             if event.type() == QEvent.Resize:
+                print('Received event for CONTEXT is RESIZE')
 
         return super(SR2Dashboard, self).eventFilter(receiver, event)
 
