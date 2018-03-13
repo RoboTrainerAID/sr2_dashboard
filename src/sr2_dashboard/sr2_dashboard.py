@@ -25,7 +25,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-#from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton
+#from python_qt_binding.QtGui import QStatusBar, QToolBar, QToolButton # Qt4
 from python_qt_binding.QtWidgets import QStatusBar, QToolBar, QToolButton
 
 # QtCore modules

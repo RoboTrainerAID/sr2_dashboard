@@ -6,7 +6,7 @@ from yaml import YAMLError
 
 # PyQt
 # QtGui modules
-#from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton
+#from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton # Qt4
 from python_qt_binding.QtWidgets import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton
 # QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
@@ -946,7 +946,8 @@ class SR2ButtonWithView(QToolButton):
             rospy.logdebug('SR2: Creating view for %s', yaml_button_list)
 
             grid = QGridLayout()
-            grid.setMargin(20)
+            #grid.setMargin(20) Qt4
+            #grid.setContentsMargins(20) #TODO not enough arguments, how to resolve?
             grid.setContentsMargins(5, 5, 5, 5)
 
             self.buttons = []
