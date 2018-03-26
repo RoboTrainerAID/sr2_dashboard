@@ -1,3 +1,4 @@
+
 # Author: Aleksandar Vladimirov Atanasov
 # Description: A SR2 buttons (for both toolbar and view widgets)
 
@@ -32,6 +33,8 @@ from subprocess import call
 # TODO Pass init-component to view and view-internal widgets to block - currently not possible since all content of a view is destroyed whenever the view is hidden -> perhaps just show/hide view instead of destroying
 # these two if init ext.process is not running
 
+hasinit = False
+
 def buttonStyle(button_type, icon, r = None, g = None, b = None, margin = None, border_radius = None):
     if not margin: margin = '3'
     if not border_radius: border_radius = '4'
@@ -50,6 +53,7 @@ def pushButtonStyle(icon, r = None, g = None, b = None, margin = None, border_ra
   
 def toolButtonStyle(icon, r = None, g = None, b = None, margin = None, border_radius = None):
     return buttonStyle('QToolButton', icon, r, g, b, margin, border_radius)
+
 
 class Status():
     '''
@@ -108,7 +112,9 @@ class SR2Button():
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
-                        return SR2ButtonInitExtProcess(yamlEntry[type], type, name, icon, parent)
+                        global hasinit
+                        hasinit = True
+                        return SR2ButtonInitExtProcess(name, cmd, pkg, args, icon, parent)
                     else:
                         return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, parent, parent_button)
             elif yaml_entry_data['type'] == 'view':
@@ -407,10 +413,12 @@ class SR2ButtonExtProcess(QToolButton):
           - **both statusOkay and toggleControl are True** - attempt to start the process
           - **statusOkay is True but toggleControl is False** - attempt to stop the process
         '''
-        if self.init_block_enabled:
-            rospy.logerr(
-                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            return
+	#if self.init_block_enabled: #shouldn't this be: "if NOT enbabled?!
+        if hasinit:
+		if not self.init_block_enabled:  
+            		rospy.logerr(
+                	'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+            		return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
@@ -876,11 +884,12 @@ class SR2ButtonService(QToolButton):
         '''
         If button is enabled, initiate a service call
         '''
-        
-        if self.init_block_enabled:
-            rospy.logerr(
-                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            return
+
+        if hasinit:
+            if self.init_block_enabled:
+                rospy.logerr(
+                    'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+                return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
@@ -1469,10 +1478,12 @@ class SR2ButtonWithView(QToolButton):
         # since those are destroyed every  time the view is hidden thus
         # only the menu entry remains...OR MAYBE NOT XD
 
-        if self.init_block_enabled:
-            rospy.logerr(
-                'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            return
+	#if self.init_block_enabled: #shouldn't this be: "if NOT enbabled?!
+        if hasinit:
+		if not self.init_block_enabled:
+            		rospy.logerr(
+                	'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+            		return
 
         if not self.yaml_view_buttons:
             return
