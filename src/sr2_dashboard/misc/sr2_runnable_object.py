@@ -4,7 +4,7 @@
 import rospy
 from std_srvs.srv import Trigger
 from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
-
+import dynamic_reconfigure.client
 
 class ServiceCallSignals(QObject):
     '''
@@ -59,10 +59,12 @@ class SR2ServiceRunnable(QRunnable):
 
       All is ran inside a separate thread retrieved from the thread pool
         '''
+
         response_status = 0
         response_msg = ''
 
         self.signals.srv_running.emit(True)
+
         try:
             # See if service is avialable for a given timeout (default 0: wait
             # until available)
@@ -75,6 +77,34 @@ class SR2ServiceRunnable(QRunnable):
         except rospy.ROSException, e:
             response_status = SR2ServiceRunnable.CallStatus.FAILED
             response_msg = e.message
+          
+          
+            
+        self.signals.srv_running.emit(False)
+        self.signals.srv_status.emit(response_status, response_msg)
+        
+class SR2DynamicReconfigureServiceRunnable(SR2ServiceRunnable):
+
+    def __init__(self, service_name, params, timeout=0):
+        '''
+        Initializes the ServiceRunnable
+        :param service_name: name of the ROS service that we want to call
+        :param timout: maximum amount of time (in seconds) required for connecting to the given service
+        '''
+        super(SR2DynamicReconfigureServiceRunnable, self).__init__(service_name, timeout)
+        self.params = params
+
+
+    def run(self):
+      
+        response_status = 0
+        response_msg = ''
+
+        self.signals.srv_running.emit(True)
+
+        #rospy.wait_for_service(self.service)
+        client = dynamic_reconfigure.client.Client(self.service, self.timeout)
+        client.update_configuration(self.params)
 
         self.signals.srv_running.emit(False)
         self.signals.srv_status.emit(response_status, response_msg)

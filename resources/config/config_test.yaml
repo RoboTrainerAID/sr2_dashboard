@@ -1,0 +1,43 @@
+# Author: Aleksandar Vladimirov Atanasov
+# Description: YAML configuration file for the SR2 Dashboard used for testing new features or fixes
+
+dashboard:
+#  init: # Critical component representing an external process that is crucial
+#        # for the proper working of the whole system. Until it is running the
+#        # rest of the toolbar components are disabled
+#        # In case it is terminated/crashes the rest of the toolbar components will be disabled
+#        # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
+#    name: "Initialization"
+#    type: "noview"
+#    menu_entry:
+#      #package: "cob_bringup"
+#      #launch: "robot"
+#      package: "lt"
+#      launch: "talker"
+
+  menus:
+    - modules:
+        - name: "Test Stuff"
+          type: "view"
+          menu_entry:
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - package: "sr2_reconfigure_service"
+                node: "reconfigure_max_speed_srv.py"
+              #- package: "sr2_reconfigure_service"
+              #  node: "reconfigure_max_speed_to_fast_from_file.py"
+              - service: "reconfigure_max_speed_srv"
+              - service: "reconfigure_max_speed_to_fast_from_file"
+              - service: "load_wall_config"
+              - service: "temp"
+                name: "temp"
+                srv_type: 'dynamic_reconfigure'
+                params: {"fast":3, "normal":1, "walls":"baum"}
+                
+        - name: "Call a test dynamic reconfigure"
+          type: "noview"
+          menu_entry:
+              service: "temp"
+              name: "temp"
+              srv_type: 'dynamic_reconfigure'
+              params: {"fast":3, "normal":1, "walls":"baum"}

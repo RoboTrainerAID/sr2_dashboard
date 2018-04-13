@@ -22,6 +22,7 @@ from rqt_robot_dashboard.icon_tool_button import IconToolButton
 
 from ..misc.sr2_monitor_object import SR2Worker, ProcStatus
 from ..misc.sr2_runnable_object import SR2ServiceRunnable
+from ..misc.sr2_runnable_object import SR2DynamicReconfigureServiceRunnable
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
 
@@ -62,59 +63,57 @@ class SR2Button():
         if not yaml_entry_data:
             return None
 
-        pkg = ''
-        cmd = ''
-        args = ''
-        timeout = 0
+        type = ''
         icon = ''
 
+        #rospy.logwarn(yaml_entry_data)
+
         if 'type' in yaml_entry_data:
+            yamlEntry = yaml_entry_data['menu_entry']
             # We have an entry that is part of the toolbar
             if yaml_entry_data['type'] == 'noview':
-                pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data[
-                    'menu_entry'])
-                if (not cmd and not pkg and not args and not timeout):
+                type, icon = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
+                if (not type):
                     return None
-                rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
-                if timeout:
+                rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
+                if type == 'service':
                     # Service
-                    if not args:
+                    if not yamlEntry['service'] and not yamlEntry['name']:
                         rospy.logerr(
                             'SR2: Trying to create noview service button but service target is empty')
                         return None
-                    return SR2ButtonService(name, args, timeout, icon, parent)
+                    return SR2ButtonService(yamlEntry, name, icon, parent)
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
-                        return SR2ButtonInitExtProcess(name, cmd, pkg, args, icon, parent)
+                        return SR2ButtonInitExtProcess(yamlEntry, name, icon, parent)
                     else:
-                        return SR2ButtonExtProcess(name, cmd, pkg, args, icon, parent)
+                        return SR2ButtonExtProcess(yamlEntry, name, icon, parent)
             elif yaml_entry_data['type'] == 'view':
                 # View
                 rospy.logdebug(
-                    '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yaml_entry_data)
-                return SR2ButtonWithView(name, yaml_entry_data['menu_entry'], context, init_widget)
+                    '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yamlEntry)
+                return SR2ButtonWithView(yamlEntry, name, context, init_widget)
             else:
                 rospy.logerr(
                     'SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
                 return None
         else:
             # We have an entry that is part of a view
-            pkg, cmd, args, icon, timeout = SR2PkgCmdExtractor.getRosPkgCmdData(
-                yaml_entry_data)
-            if (not cmd and not pkg and not args and not timeout):
+            type, icon = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
+            if (not type):
                 return None
-            rospy.logdebug('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n\t@Timeout: %d\n----------------------------------', name, cmd, args, pkg, timeout)
-            if timeout:
+            rospy.logdebug('\n----------------------------------\n\tCREATE VIEW BUTTON\n\t@Name: %s\n\t@yaml_entry_data: %s----------------------------------', name, yaml_entry_data)
+            if type == 'service':
                 # Service
-                if not args:
+                if not yaml_entry_data['service'] and not yaml_entry_data['name']:
                     rospy.logerr(
                         'SR2: Trying to create noview service button but service target is empty')
                     return None
-                return SR2ViewButtonService(name, display_name, args, timeout, icon, parent)
+                return SR2ViewButtonService(yaml_entry_data, name, display_name, icon, parent)
             else:
                 # External process (roslaunch, rosrun or app)
-                return SR2ViewButtonExtProcess(name, display_name, cmd, pkg, args, icon, parent)
+                return SR2ViewButtonExtProcess(yaml_entry_data, name, display_name, icon, parent)
 
 ############## QToolButton ############
 
@@ -150,12 +149,50 @@ class SR2ButtonExtProcess(QToolButton):
     stop_signal = pyqtSignal()
     clear_error_signal = pyqtSignal()
 
+    pkg = ''
+    cmd = ''   # Can be rosrun/roslaunch/rosservice call
+    # Args is the actual ROS node/launch file/etc. we want to start
+    # (exception: see "app" case)
+    args = ''
+
+    def parse_yaml_entry(self, yamlEntry):
+         if 'package' in yamlEntry:
+            # We can have either a rosrun or roslaunch
+            self.pkg = yamlEntry['package']
+            rospy.logdebug('SR2: Found package "%s"', self.pkg)
+            if 'node' in yamlEntry:
+                # We have a rosrun command
+                self.cmd = 'rosrun'
+                self.args = yamlEntry['node']        # rosrun pkg node
+                rospy.logdebug('SR2: Found rosrun command for node "%s"', self.args)
+            elif 'launch' in yamlEntry:
+                # We have a roslaunch command
+                self.cmd = 'roslaunch'
+                self.args = yamlEntry['launch']      # roslaunch pkg launch_file
+                if '.launch' not in args:
+                    self.args += '.launch'
+                rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
+         elif 'app' in yamlEntry:
+            # We have a standalone application
+            self.cmd = yamlEntry['app']
+            rospy.logdebug('SR2: Found standalone application "%s"', self.cmd)
+            if 'args' in yamlEntry:
+                self.args = yamlEntry['args']
+                rospy.logdebug('SR2: Found arguments for standalone application "%s"', self.args)
+                self.timeout = 0
+            else:
+                rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
+
+
     # TODO Replace IconToolButton with own version (add parent property!)
-    def __init__(self, name, cmd, pkg, args, icon, parent=None):
+    def __init__(self, yamlEntry, name, icon, parent=None):
+      
+        self.parse_yaml_entry(yamlEntry)
+      
         super(SR2ButtonExtProcess, self).__init__()
 
         rospy.logdebug(
-            '\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+            '\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
 
         self.icon = icon
         style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
@@ -166,10 +203,6 @@ class SR2ButtonExtProcess(QToolButton):
         self.setObjectName(name)
         self.name = name
         self.setToolTip(self.name)
-
-        self.cmd = cmd
-        self.args = args
-        self.pkg = pkg
 
         self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
         self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
@@ -357,13 +390,17 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
 
     block_override = pyqtSignal(bool)  # Connect this to the toolbar component that has to depend on the state of INIT
 
-    def __init__(self, name, cmd, pkg, args, icon, parent=None):
+    def __init__(self, yamlEntry, name, icon, parent=None):
+      
+        self.parse_yaml_entry(self, yamlEntry)
+      
         super(SR2ButtonInitExtProcess, self).__init__(
-            name, cmd, pkg, args, parent)
-        rospy.logdebug('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+            name, parent)
+        rospy.logdebug('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\t@yamlEntry: %s----------------------------------', name, yamlEntry)
         self.init_block_enabled = False
         # The block override will override the blocking from the workers of these buttons based on the enable-state of the INIT button
         # TODO If super.state is INACTIVE or FAILED -> emit block_override
+
 
     @pyqtSlot(int)
     def statusChangedReceived(self, status):
@@ -410,7 +447,7 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
 ##########################################################################
 
 
-class SR2ViewButtonExtProcess(QWidget):
+class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess because of widget functionality vs button functionality (?)
     '''
     Part of a view; gives the ability to start/stop and monitor an external process (roslaunch, rosrun or standalone application)
     '''
@@ -418,21 +455,54 @@ class SR2ViewButtonExtProcess(QWidget):
     stop_signal = pyqtSignal()
     clear_error_signal = pyqtSignal()
 
-    def __init__(self, name, display_name, cmd, pkg, args, icon, parent=None):
+    pkg = ''
+    cmd = ''   # Can be rosrun/roslaunch/rosservice call
+    # Args is the actual ROS node/launch file/etc. we want to start
+    # (exception: see "app" case)
+    args = ''
+
+    def parse_yaml_entry(self, yamlEntry):
+         if 'package' in yamlEntry:
+            # We can have either a rosrun or roslaunch
+            self.pkg = yamlEntry['package']
+            rospy.logdebug('SR2: Found package "%s"', self.pkg)
+            if 'node' in yamlEntry:
+                # We have a rosrun command
+                self.cmd = 'rosrun'
+                self.args = yamlEntry['node']        # rosrun pkg node
+                rospy.logdebug('SR2: Found rosrun command for node "%s"', self.args)
+            elif 'launch' in yamlEntry:
+                # We have a roslaunch command
+                self.cmd = 'roslaunch'
+                self.args = yamlEntry['launch']      # roslaunch pkg launch_file
+                if '.launch' not in args:
+                    self.args += '.launch'
+                rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
+         elif 'app' in yamlEntry:
+            # We have a standalone application
+            self.cmd = yamlEntry['app']
+            rospy.logdebug('SR2: Found standalone application "%s"', self.cmd)
+            if 'args' in yamlEntry:
+                self.args = yamlEntry['args']
+                rospy.logdebug('SR2: Found arguments for standalone application "%s"', self.args)
+                self.timeout = 0
+            else:
+                rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
+
+    def __init__(self, yamlEntry, name, display_name, icon, parent=None):
+      
+        self.parse_yaml_entry(yamlEntry)
+      
         super(SR2ViewButtonExtProcess, self).__init__(parent)
 
         rospy.logdebug(
-            '\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@Cmd: %s\n\t@Args: %s\n\t@Pkg: %s\n----------------------------------', name, cmd, args, pkg)
+            '\n----------------------------------\n\tEXT.PROC\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
 
         self.setObjectName(name)
         self.name = name
         self.icon = icon
         style = 'QPushButton:hover{border: 4px solid transparent;} QPushButton{margin: 3px; border-radius: 4px; image: url(' + \
             self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
-
-        self.cmd = cmd
-        self.args = args
-        self.pkg = pkg
 
         layout = QVBoxLayout(self)
         layout.setObjectName(name + 'Layout Ext Proc')
@@ -659,8 +729,50 @@ class SR2ButtonService(QToolButton):
     '''
     Part of a toolbar; initiates a service call and reports back once service has replied or timeout
     '''
+    
+    srv_name = '' # Name contains the name of the service that we want to call
+    timeout = 0
+    type = 'trigger' #default type is trigger
+    params = '' #will only be used by dynamic_reconfigure type
+    
+    def parse_yaml_entry(self, yamlEntry):
+        # We have a service
+        # my_service becomes /my_service so that it can easily be combined
+        # later on with rosservice call
+        
+        if 'name' in yamlEntry:
+            self.srv_name = yamlEntry['name']
+        else:
+            self.srv_name = yamlEntry['service']
+        rospy.logdebug('SR2: Found service "%s"', self.srv_name)
+        self.srv_name = '/' + self.srv_name
+        if 'timeout' in yamlEntry:
+            try:
+                self.timeout = int(yamlEntry['timeout'])
+                rospy.logdebug(
+                    'SR2: Found timeout for service: %d', self.timeout)
+                if not self.timeout or self.timeout < 0:
+                    rospy.logwarn(
+                        'SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
+                    self.timeout = 5
+            except:
+                rospy.logwarn(
+                    'SR2: Found timeout for service but unable to parse it. Falling back to default: 5')
+                self.timeout = 5
+        else:
+            self.timeout = 5
+            
+        if 'srv_type' in yamlEntry:
+            self.type = yamlEntry['srv_type']
+            
+        if self.type == 'dynamic_reconfigure':
+            self.params = yamlEntry['params']
+    
 
-    def __init__(self, name, args, timeout, icon, parent=None, minimal=True):
+    def __init__(self, yamlEntry, name, icon, parent=None, minimal=True):
+      
+        self.parse_yaml_entry(yamlEntry)
+      
         super(SR2ButtonService, self).__init__()
 
         self.icon = icon
@@ -671,18 +783,19 @@ class SR2ButtonService(QToolButton):
 #        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
         self.minimal = minimal
         self.name = name
-        self.timeout = timeout
-        self.args = args  # Args contains the Trigger service that we want to call
 
         rospy.logdebug(
-            '\n----------------------------------\n\tSERVICE\n\t@Name: %s\n\t@Args: %s\n\t@Timeout: %d\n----------------------------------', name, args, timeout)
+            '\n----------------------------------\n\tSERVICE\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
 
         self.tooltip = self.name + ' : "' + 'rosservice call' + \
-            ' ' + self.args + '"<br/>Reply: --'
+            ' ' + self.srv_name + '"<br/>Reply: --'
         self.setToolTip(self.tooltip)
 
         self.thread_pool = QThreadPool()
-        self.service = SR2ServiceRunnable(self.args, self.timeout)
+        if self.type == 'dynamic_reconfigure':
+            self.service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.params, self.timeout)
+        else: #Trigger
+            self.service = SR2ServiceRunnable(self.srv_name, self.timeout)
         self.service.setAutoDelete(False)
         self.service.signals.srv_running.connect(self.block)
         self.service.signals.srv_status.connect(self.reply)
@@ -711,7 +824,7 @@ class SR2ButtonService(QToolButton):
 
         if not self.disabled:
             rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d',
-                          self.args, int(QThread.currentThreadId()), self.timeout)
+                          self.srv_name, int(QThread.currentThreadId()), self.timeout)
             self.thread_pool.start(self.service)
         else:
             rospy.loginfo(
@@ -757,15 +870,15 @@ class SR2ButtonService(QToolButton):
                     ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             self.statusOkay = False
             rospy.logerr('SR2: Calling service %s failed due to "%s"',
-                         self.args, msg)
+                         self.srv_name, msg)
         else:
             style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
                 self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
             rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
-                          self.args, ('True' if not status else 'False'), msg)
+                          self.srv_name, ('True' if not status else 'False'), msg)
 
         self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + \
-            self.args + '"</nobr><br/>Reply: ' + msg
+            self.srv_name + '"</nobr><br/>Reply: ' + msg
 
         self.setToolTip(self.tooltip)
         self.setStyleSheet(style)
@@ -774,10 +887,49 @@ class SR2ButtonService(QToolButton):
 ##########################################################################
 # SR2ViewButtonS
 ##########################################################################
-class SR2ViewButtonService(QWidget):
+class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService because of widget functionality vs button functionality (?)
     '''
     Part of a view; initiates a service call and reports back once service has replied or timeout
     '''
+    
+    srv_name = '' # Name contains the name of the service that we want to call
+    timeout = 0
+    type = 'trigger' #default type is trigger
+    params = '' #will only be used by dynamic_reconfigure type
+    
+    def parse_yaml_entry(self, yamlEntry):
+        # We have a service
+        # my_service becomes /my_service so that it can easily be combined
+        # later on with rosservice call
+        
+        if 'name' in yamlEntry:
+            self.srv_name = yamlEntry['name']
+        else:
+            self.srv_name = yamlEntry['service']
+        rospy.logdebug('SR2: Found service "%s"', self.srv_name)
+        self.srv_name = '/' + self.srv_name
+        if 'timeout' in yamlEntry:
+            try:
+                self.timeout = int(yamlEntry['timeout'])
+                rospy.logdebug(
+                    'SR2: Found timeout for service: %d', self.timeout)
+                if not self.timeout or self.timeout < 0:
+                    rospy.logwarn(
+                        'SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
+                    self.timeout = 5
+            except:
+                rospy.logwarn(
+                    'SR2: Found timeout for service but unable to parse it. Falling back to default: 5')
+                self.timeout = 5
+        else:
+            self.timeout = 5
+            
+        if 'srv_type' in yamlEntry:
+            self.type = yamlEntry['srv_type']
+            
+        if self.type == 'dynamic_reconfigure':
+            self.params = yamlEntry['params']
+    
     @pyqtSlot()
     def call(self):
         '''
@@ -789,7 +941,7 @@ class SR2ViewButtonService(QWidget):
                 self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
             self.service_caller.setStyleSheet(style)
             self.service_caller.setToolTip(
-                'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's inactive')
+                'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's inactive')
             self.statusOkay = True
             rospy.loginfo('SR2: Error acknowledged')
             return
@@ -798,7 +950,7 @@ class SR2ViewButtonService(QWidget):
             self.reply_statL.setText('Reply status:')
             self.reply_msgL.setText('Reply message:')
             rospy.loginfo('SR2: Calling service %s with timeout %d',
-                          self.args, self.timeout)
+                          self.srv_name, self.timeout)
             self.thread_pool.start(self.service)
         else:
             rospy.loginfo(
@@ -824,8 +976,8 @@ class SR2ViewButtonService(QWidget):
             # FIXME Currently after running a call the "is being processed" is
             # still attached even though the call is inactive
             self.service_caller.setToolTip(
-                'Service call "' + self.args + '" with timeout ' + str(self.timeout) + 's is being processed...')
-#      self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.args + '"</nobr><br/>Status: Running...')
+                'Service call "' + self.srv_name + '" with timeout ' + str(self.timeout) + 's is being processed...')
+#      self.message.setText('<nobr>' + self.name + ' : "rosservice call ' + self.srv_name + '"</nobr><br/>Status: Running...')
             self.service_caller.setDisabled(True)
 
         self.disabled = state
@@ -842,35 +994,36 @@ class SR2ViewButtonService(QWidget):
                 self.icon + \
                     ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
             rospy.logerr(
-                'SR2: Calling service %s failed due to "%s"', self.args, msg)
+                'SR2: Calling service %s failed due to "%s"', self.srv_name, msg)
             self.reply_statL.setText(
                 'Reply status: <font color=\"red\">Error</font>')
             self.reply_msgL.setText(
                 'Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
             self.statusOkay = False
             self.service_caller.setToolTip(
-                'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's failed')
+                'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's failed')
         else:
             style = 'QPushButton:hover{border: 4px solid transparent;} QPushButton{margin: 3px; border-radius: 4px; image: url(' + \
                 self.icon + \
                     ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
             rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
-                          self.args, ('True' if not status else 'False'), msg)
+                          self.srv_name, ('True' if not status else 'False'), msg)
             self.reply_statL.setText('Reply status: ' + ('True' if status ==
                                                          SR2ServiceRunnable.CallStatus.SUCCESS_TRUE else 'False'))
             self.reply_msgL.setText('Reply message: ' + msg)
             self.service_caller.setToolTip(
-                'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's successful')
+                'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's successful')
 
         self.service_caller.setStyleSheet(style)
         self.service_caller.setDisabled(False)
 
-    def __init__(self, name, display_name, args, timeout, icon, parent=None):
+    def __init__(self, yaml_entry_data, name, display_name, icon, parent=None):
+      
+        self.parse_yaml_entry(yaml_entry_data)
+      
         super(SR2ViewButtonService, self).__init__(parent)
 
         self.icon = icon
-        self.args = args
-        self.timeout = timeout
         self.name = name
         self.setObjectName(name)
 
@@ -886,7 +1039,7 @@ class SR2ViewButtonService(QWidget):
             self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
         self.service_caller.setStyleSheet(style)
         self.service_caller.setToolTip(
-            'Service call "' + self.args + '" with timeout  ' + str(self.timeout) + 's inactive')
+            'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's inactive')
         self.service_caller.setSizePolicy(
             QSizePolicy.Expanding, QSizePolicy.Expanding)
         controls_layout.addWidget(self.service_caller)
@@ -897,7 +1050,7 @@ class SR2ViewButtonService(QWidget):
 
         info_layout = QVBoxLayout()
         if 'default_' in self.icon:
-            service_nameL = QLabel('Service: ' + self.args, self)
+            service_nameL = QLabel('Service: ' + self.srv_name, self)
             service_nameL.setWordWrap(True)
             info_layout.addWidget(service_nameL)
         self.reply_statL = QLabel('Reply status:', self)
@@ -913,7 +1066,10 @@ class SR2ViewButtonService(QWidget):
         layout.addLayout(info_layout)
 
         self.thread_pool = QThreadPool(self)
-        self.service = SR2ServiceRunnable(self.args, self.timeout)
+        if self.type == 'dynamic_reconfigure':
+            self.service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.params, self.timeout)
+        else:
+            self.service = SR2ServiceRunnable(self.srv_name, self.timeout)
         self.service.setAutoDelete(False)
         self.service.signals.srv_running.connect(self.block)
         self.service.signals.srv_status.connect(self.reply)
@@ -996,7 +1152,7 @@ class SR2ButtonWithView(QToolButton):
         def restore_settings(self, plugin_settings, instance_settings):
             pass
 
-    def __init__(self, name, yaml_entry_data, context, surpress_overlays=False, minimal=True):
+    def __init__(self, yaml_entry_data, name, context, surpress_overlays=False, minimal=True):
         super(SR2ButtonWithView, self).__init__()
 
         self.icon = ''
@@ -1016,6 +1172,7 @@ class SR2ButtonWithView(QToolButton):
             # Buttons contains a list of YAML buttons inside the menu_entry of
             # the view node. This list is used for populating the view with
             # components
+            #rospy.logwarn(yaml_entry_data['buttons'])
             self.yaml_view_buttons = yaml_entry_data['buttons']
             if not self.yaml_view_buttons:
                 raise Exception('Empty button list')
@@ -1093,14 +1250,14 @@ class SR2ButtonWithView(QToolButton):
                     rospy.logdebug('SR2: Added SR2View "%s"', self.name)
                     self.view_widget = SR2ButtonWithView.SR2View(
                         self.name, self.yaml_view_buttons)
-
                     self.context.add_widget(self.view_widget)
+                    
             except Exception as e:
                 if not self.view_widget:
                     #                    self.setIcon(self._icons[IconType.error])
                     style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
-                        self.icon + \
-                            ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
+                        self.icon + ') 0 0 0 0 stretch stretch; background: rgb(215, 56, 56);}'
+                    #rospy.logwarn(self.yaml_view_buttons)
                     rospy.logerr(
                         'SR2: Error during showing SR2View : %s', e.message)
                 self.toggled = False

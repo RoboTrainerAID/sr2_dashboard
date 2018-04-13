@@ -123,80 +123,37 @@ class SR2PkgCmdExtractor:
             rospy.logwarn('SR2: Empty entry configuration')
             return ('', '', '', '', 0)
 
-        pkg = ''
-        cmd = ''   # Can be rosrun/roslaunch/rosservice call
-        # Args is the actual ROS node/launch file/etc. we want to start
-        # (exception: see "app" case)
-        args = ''
+        type = ''
         icon = ''
         icon_path = ''
         icon_type = None
-        timeout = 0
+        pkg = ''
+        
+        ''''
+        namespace = ''
+        yaml_default = '' #for servces that change param values (using dynamic reconfigure), this is the yaml with the content to be loaded when unpressing the button
+        yaml_pressed = '' #the content to be loaded when a reconfigure button is pressed
+        '''
+
+        if 'app' in yamlEntry:
+            type = 'app'
+            icon_type = IconType.type_app
+        elif 'launch' in yamlEntry:
+            type = 'launch'
+            icon_type = IconType.type_proc
+        elif 'node' in yamlEntry:
+            type = 'node'
+            icon_type = IconType.type_proc
+        elif 'service' in yamlEntry:
+            type = 'service'
+            icon_type = IconType.type_srv
 
         if 'package' in yamlEntry:
-            # We can have either a rosrun or roslaunch
             pkg = yamlEntry['package']
-            rospy.logdebug('SR2: Found package "%s"', pkg)
-            if 'node' in yamlEntry:
-                # We have a rosrun command
-                cmd = 'rosrun'
-                args = yamlEntry['node']        # rosrun pkg node
-                rospy.logdebug('SR2: Found rosrun command for node "%s"', args)
-                icon_type = IconType.type_proc
-            elif 'launch' in yamlEntry:
-                # We have a roslaunch command
-                cmd = 'roslaunch'
-                args = yamlEntry['launch']      # roslaunch pkg launch_file
-                if '.launch' not in args:
-                    args += '.launch'
-                icon_type = IconType.type_proc
-                rospy.logdebug(
-                    'SR2: Found roslaunch command for launch file "%s"', args)
-
-            if 'args' in yamlEntry:
-                # [rosrun/roslaunch] pkg [node/launch_file] arg1:=... arg2:=...
-                args1 = yamlEntry['args']
-                rospy.logdebug('SR2: Found arguments for command "%s"', args1)
-                args = args + args1
-            timeout = 0
-        elif 'service' in yamlEntry:
-            # We have a service
-            # my_service becomes /my_service so that it can easily be combined
-            # later on with rosservice call
-            args = yamlEntry['service']
-            rospy.logdebug('SR2: Found service "%s"', args)
-            args = '/' + args
-            icon_type = IconType.type_srv
-            if 'timeout' in yamlEntry:
-                try:
-                    timeout = int(yamlEntry['timeout'])
-                    rospy.logdebug(
-                        'SR2: Found timeout for service: %d', timeout)
-                    if not timeout or timeout < 0:
-                        rospy.logwarn(
-                            'SR2: Timeout for service is either negative or equal zero. Falling back to default: 5')
-                        timeout = 5
-                except:
-                    rospy.logwarn(
-                        'SR2: Found timeout for service but unable to parse it. Falling back to default: 5')
-                    timeout = 5
-            else:
-                timeout = 5
-        elif 'app' in yamlEntry:
-            # We have a standalone application
-            cmd = yamlEntry['app']
-            rospy.logdebug('SR2: Found standalone application "%s"', cmd)
-            if 'args' in yamlEntry:
-                args = yamlEntry['args']
-                rospy.logdebug(
-                    'SR2: Found arguments for standalone application "%s"', args)
-            timeout = 0
-            icon_type = IconType.type_app
-        else:
-            rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
-            icon_type = IconType.type_none
 
         if 'icon' in yamlEntry:
             icon_path = yamlEntry['icon']
+        
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
-        return (pkg, cmd, args, icon, timeout)
+        
+        return (type, icon)
