@@ -734,6 +734,7 @@ class SR2ButtonService(QToolButton):
     timeout = 0
     type = 'trigger' #default type is trigger
     params = '' #will only be used by dynamic_reconfigure type
+    toggle_params = '' #will only be used by dynamic_reconfigure type with second 'toggle' ability
     
     def parse_yaml_entry(self, yamlEntry):
         # We have a service
@@ -767,6 +768,8 @@ class SR2ButtonService(QToolButton):
             
         if self.type == 'dynamic_reconfigure':
             self.params = yamlEntry['params']
+            if 'toggle_params' in yamlEntry:
+                self.toggle_params = yamlEntry['toggle_params']
     
 
     def __init__(self, yamlEntry, name, icon, parent=None, minimal=True):
@@ -794,6 +797,11 @@ class SR2ButtonService(QToolButton):
         self.thread_pool = QThreadPool()
         if self.type == 'dynamic_reconfigure':
             self.service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.params, self.timeout)
+            if self.toggle_params:
+                self.toggle_service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.toggle_params, self.timeout)
+                self.toggle_service.setAutoDelete(False)
+                self.toggle_service.signals.srv_running.connect(self.block)
+                self.toggle_service.signals.srv_status.connect(self.reply)
         else: #Trigger
             self.service = SR2ServiceRunnable(self.srv_name, self.timeout)
         self.service.setAutoDelete(False)
@@ -804,6 +812,7 @@ class SR2ButtonService(QToolButton):
         self.disabled = False
         self.init_block_enabled = True
         self.statusOkay = True
+        self.toggled = False
 
     @pyqtSlot()
     def call(self):
@@ -823,9 +832,15 @@ class SR2ButtonService(QToolButton):
             return
 
         if not self.disabled:
-            rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d',
-                          self.srv_name, int(QThread.currentThreadId()), self.timeout)
-            self.thread_pool.start(self.service)
+            if not self.toggled:
+                rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d', self.srv_name, int(QThread.currentThreadId()), self.timeout)
+                self.thread_pool.start(self.service)
+                if self.toggle_params:
+                    self.toggled = True
+            else:
+                rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d and toggle parameters', self.srv_name, int(QThread.currentThreadId()), self.timeout)
+                self.thread_pool.start(self.toggle_service)
+                self.toggled = False
         else:
             rospy.loginfo(
                 'SR2: Service call is currently being processed. Please wait...')
@@ -872,10 +887,16 @@ class SR2ButtonService(QToolButton):
             rospy.logerr('SR2: Calling service %s failed due to "%s"',
                          self.srv_name, msg)
         else:
-            style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
-                self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
-            rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
-                          self.srv_name, ('True' if not status else 'False'), msg)
+            if not self.toggled:
+                style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 3px; border-radius: 4px; image: url(' + \
+                    self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+                rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
+                              self.srv_name, ('True' if not status else 'False'), msg)
+            else: 
+                style = 'QToolButton:hover{border: 2px solid black;} QToolButton{margin: 6px; border-radius: 8px; image: url(' + \
+                    self.icon + ') 0 0 0 0 stretch stretch; background: none;}'
+                rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
+                              self.srv_name, ('True' if not status else 'False'), msg)
 
         self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + \
             self.srv_name + '"</nobr><br/>Reply: ' + msg
@@ -896,6 +917,7 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
     timeout = 0
     type = 'trigger' #default type is trigger
     params = '' #will only be used by dynamic_reconfigure type
+    toggle_params = '' #will only be used by dynamic_reconfigure type with second 'toggle' ability
     
     def parse_yaml_entry(self, yamlEntry):
         # We have a service
@@ -929,6 +951,8 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
             
         if self.type == 'dynamic_reconfigure':
             self.params = yamlEntry['params']
+            if 'toggle_params' in yamlEntry:
+                self.toggle_params = yamlEntry['toggle_params']
     
     @pyqtSlot()
     def call(self):
@@ -949,9 +973,15 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
         if not self.disabled:
             self.reply_statL.setText('Reply status:')
             self.reply_msgL.setText('Reply message:')
-            rospy.loginfo('SR2: Calling service %s with timeout %d',
-                          self.srv_name, self.timeout)
-            self.thread_pool.start(self.service)
+            if not self.toggled:
+                rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d', self.srv_name, int(QThread.currentThreadId()), self.timeout)
+                self.thread_pool.start(self.service)
+                if self.toggle_params:
+                    self.toggled = True
+            else:
+                rospy.loginfo('SR2: Calling service %s from thread %d with timeout set to %d and toggle parameters', self.srv_name, int(QThread.currentThreadId()), self.timeout)
+                self.thread_pool.start(self.toggle_service)
+                self.toggled = False
         else:
             rospy.loginfo(
                 'SR2: Service call is currently being processed. Please wait...')
@@ -1003,9 +1033,10 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
             self.service_caller.setToolTip(
                 'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's failed')
         else:
-            style = 'QPushButton:hover{border: 4px solid transparent;} QPushButton{margin: 3px; border-radius: 4px; image: url(' + \
-                self.icon + \
-                    ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            if not self.toggled: 
+                style = 'QPushButton:hover{border: 4px solid transparent;} QPushButton{margin: 3px; border-radius: 4px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
+            else: 
+                style = 'QPushButton:hover{border: 4px solid transparent;} QPushButton{margin: 24px; border-radius: 32px; image: url(' + self.icon + ') 0 0 0 0 stretch stretch; background: rgb(89, 205, 139);}'
             rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
                           self.srv_name, ('True' if not status else 'False'), msg)
             self.reply_statL.setText('Reply status: ' + ('True' if status ==
@@ -1068,6 +1099,11 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
         self.thread_pool = QThreadPool(self)
         if self.type == 'dynamic_reconfigure':
             self.service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.params, self.timeout)
+            if self.toggle_params:
+                self.toggle_service = SR2DynamicReconfigureServiceRunnable(self.srv_name, self.toggle_params, self.timeout)
+                self.toggle_service.setAutoDelete(False)
+                self.toggle_service.signals.srv_running.connect(self.block)
+                self.toggle_service.signals.srv_status.connect(self.reply)
         else:
             self.service = SR2ServiceRunnable(self.srv_name, self.timeout)
         self.service.setAutoDelete(False)
@@ -1077,6 +1113,7 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
 
         self.disabled = False
         self.statusOkay = True
+        self.toggled = False
 
         self.setLayout(layout)
         self.resize(layout.sizeHint())

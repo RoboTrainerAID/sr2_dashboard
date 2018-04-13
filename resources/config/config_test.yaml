@@ -33,6 +33,7 @@ dashboard:
                 name: "temp"
                 srv_type: 'dynamic_reconfigure'
                 params: {"fast":3, "normal":1, "walls":"baum"}
+                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
                 
         - name: "Call a test dynamic reconfigure"
           type: "noview"
@@ -41,3 +42,4 @@ dashboard:
               name: "temp"
               srv_type: 'dynamic_reconfigure'
               params: {"fast":3, "normal":1, "walls":"baum"}
+              toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
