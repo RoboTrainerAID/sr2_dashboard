@@ -102,9 +102,14 @@ class SR2DynamicReconfigureServiceRunnable(SR2ServiceRunnable):
 
         self.signals.srv_running.emit(True)
 
-        #rospy.wait_for_service(self.service)
-        client = dynamic_reconfigure.client.Client(self.service, self.timeout)
-        client.update_configuration(self.params)
+        try: 
+            #rospy.wait_for_service(self.service)
+            client = dynamic_reconfigure.client.Client(self.service, self.timeout)
+            client.update_configuration(self.params)
+        except rospy.ROSException, e:
+            response_status = SR2ServiceRunnable.CallStatus.FAILED
+            response_msg = e.message
+          
 
         self.signals.srv_running.emit(False)
         self.signals.srv_status.emit(response_status, response_msg)
