@@ -169,7 +169,7 @@ class SR2ButtonExtProcess(QToolButton):
                 # We have a roslaunch command
                 self.cmd = 'roslaunch'
                 self.args = yamlEntry['launch']      # roslaunch pkg launch_file
-                if '.launch' not in args:
+                if '.launch' not in self.args:
                     self.args += '.launch'
                 rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
          elif 'app' in yamlEntry:
@@ -475,7 +475,7 @@ class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess
                 # We have a roslaunch command
                 self.cmd = 'roslaunch'
                 self.args = yamlEntry['launch']      # roslaunch pkg launch_file
-                if '.launch' not in args:
+                if '.launch' not in self.args:
                     self.args += '.launch'
                 rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
          elif 'app' in yamlEntry:
