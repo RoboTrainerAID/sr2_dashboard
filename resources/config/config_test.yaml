@@ -22,24 +22,28 @@ dashboard:
           menu_entry:
             icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - package: "sr2_reconfigure_service"
-                node: "reconfigure_max_speed_srv.py"
+              - node: 
+                  name: "reconfigure_max_speed_srv.py"
+                  package: "sr2_reconfigure_service"
               #- package: "sr2_reconfigure_service"
               #  node: "reconfigure_max_speed_to_fast_from_file.py"
-              - service: "reconfigure_max_speed_srv"
-              - service: "reconfigure_max_speed_to_fast_from_file"
-              - service: "load_wall_config"
-              - service: "temp"
-                name: "temp"
-                srv_type: 'dynamic_reconfigure'
-                params: {"fast":3, "normal":1, "walls":"baum"}
-                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+              - service: 
+                  name: "reconfigure_max_speed_srv"
+              - service: 
+                  name: "reconfigure_max_speed_to_fast_from_file"
+              - service: 
+                  name: "load_wall_config"
+              - service:
+                  name: "temp"
+                  srv_type: 'dynamic_reconfigure'
+                  params: {"fast":3, "normal":1, "walls":"baum"}
+                  toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
                 
         - name: "Call a test dynamic reconfigure"
           type: "noview"
           menu_entry:
-              service: "temp"
-              name: "temp"
-              srv_type: 'dynamic_reconfigure'
-              params: {"fast":3, "normal":1, "walls":"baum"}
-              toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+              service:
+                name: "temp"
+                srv_type: 'dynamic_reconfigure'
+                params: {"fast":3, "normal":1, "walls":"baum"}
+                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}

@@ -20,88 +20,111 @@ dashboard:
         - name: "Talker"
           type: "noview"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
-            package: "lt"
-            node: "talker.py"
-            #args: "some options" # Optional
+            node:
+              name: "talker.py"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
+              package: "lt"
+              #args: "some options" # Optional
 
         - name: "CoB Bringup"
           type: "view"
           menu_entry:
             icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - service: "trigger_srv"
-                timeout: 10
-#                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg" # Absolute
-#                icon: "resources/images/battery/battery-charge-100-green.svg" # Relative to given package for this entry
-              - package: "lt"
-                launch: "talker"
-              - service: "trigger_srv"
-                icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
-              - service: "trigger_srv"
-              - service: "trigger_srv"
-              - package: "lt"
-                launch: "listener"
-              - service: "trigger_srv"
-              - icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/calculator.svg"
-                app: "gnome-calculator"
+              - service:
+                  name: "trigger_srv"
+                  timeout: 10
+#                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/battery/battery-20.svg" # Absolute
+#                  icon: "resources/images/battery/battery-charge-100-green.svg" # Relative to given package for this entry
+              - launch:
+                  name: "talker"
+                  package: "lt"
+              - service:
+                  name: "trigger_srv"
+                  icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
+              - service:
+                  name: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
+              - launch:
+                  name: "listener"
+                  package: "lt"
+              - service:
+                  name: "trigger_srv"
+              - app:
+                  name: "gnome-calculator"
+                  icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/calculator.svg"
 
     - modules:
         - name: "Listener"
           type: "noview"
           menu_entry:
-            package: "lt"
-            node: "listener.py"
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
+            node:
+              name: "listener.py"
+              package: "lt"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
         - name: "Testing"
           type: "view"
           menu_entry:
             icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - name: "SR2 Mapping"
-                package: "sr2_bringup"
-                launch: "mapping"
-              - package: "sr2_bringup"
-                launch: "navigation"
-              - package: "drive_program"
-                launch: "combine.launch"
-              - package: "drive_program"
-                node: "drive_program"
-              - name: "COB Bringup Initialization"
-                package: "cob_bringup"
-                launch: "robot"
+              - launch:
+                  name: "mapping"
+                  name: "SR2 Mapping"
+                  package: "sr2_bringup"
+              - launch:
+                  name: "navigation"
+                  package: "sr2_bringup"
+              - launch:
+                  name: "combine.launch"
+                  package: "drive_program"
+              - node:
+                  name: "drive_program"
+                  package: "drive_program"
+              - launch:
+                  name: "robot"
+                  name: "COB Bringup Initialization"
+                  package: "cob_bringup"
+                
         - name: "Call Trigger Service Server"
           type: "noview"
           menu_entry:
-            service: "trigger_srv"
-            timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
+            service:
+              name: "trigger_srv"
+              timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
         - name: "Launch Trigger Service Server"
           type: "noview"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
-            package: "testing"
-            node: "trigger_srv_server.py"
+            node:
+              name: "trigger_srv_server.py"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/status/status.svg"
+              package: "testing"
+            
 
     - modules:
         # WARNING: some application behave differently based on whether a current instance of that same application is running or not (example: firefox, eclipse)
         - name: "RQT Graph"
           type: "noview"
           menu_entry: #rqt_graph, rqt_console
-            app: "rqt_graph" # Arguments can be included inside the string; all arguments have to be separated by the command by a space
+            app:
+              name: "rqt_graph" # Arguments can be included inside the string; all arguments have to be separated by the command by a space
                              # Example: "firefox -new-tab www.google.com" will be split into: cmd="firefox" and args="-new-tab www.google.com
         - name: "Firefox Google"
           type: "noview"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
-            app: "firefox"
-            args: "-new-window www.google.com"
+            app:
+              name:"firefox"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
+              args: "-new-window www.google.com"
         - name: "Editor"
           type: "noview"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/gedit.svg"
-            app: "gedit"
+            app:
+              name: "gedit"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/gedit.svg"
         - name: "Eclipse"
           type: "noview"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/eclipse.svg"
-            app: "eclipse"
+            app:
+              name: "eclipse"
+              icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/eclipse.svg"

@@ -16,57 +16,79 @@ dashboard:
           menu_entry:
             icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/mapping.svg"
-                # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
-                package: "sr2_bringup"
-                launch: "mapping"
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/navigation.svg"
-                # Author: https://www.iconfinder.com/mrpixel
-                package: "sr2_bringup"
-                launch: "navigation"
-              - package: "drive_program"
-                icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
-                launch: "combine.launch"
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/drive/drive_program.svg"
-                # Author: https://www.iconfinder.com/bogdanrosu
-                package: "drive_program"
-                node: "drive_program"
-              - icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/init/cob_bringup.svg"
-                # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
-                package: "cob_bringup"
-                launch: "robot"
+              - launch:
+                  name: "mapping"
+                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/mapping.svg"
+                  # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
+                  package: "sr2_bringup"
+              - launch:
+                  name: "navigation"
+                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/mapping_navigation/navigation.svg"
+                  # Author: https://www.iconfinder.com/mrpixel
+                  package: "sr2_bringup"
+                
+              - launch:
+                  name: "combine.launch"
+                  package: "drive_program"
+                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/misc/ros.svg"
+                
+              - node:
+                  name: "drive_program"
+                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/drive/drive_program.svg"
+                  # Author: https://www.iconfinder.com/bogdanrosu
+                  package: "drive_program"
+                
+              - launch:
+                  name: "robot"
+                  icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/init/cob_bringup.svg"
+                  # Author: http://icons8.com/ (converted to SVG using Inkscape bitmap tracing)
+                  package: "cob_bringup"
+                
 
         - name: "Person Tracking View"
           type: "view"
           menu_entry:
+            icon: "/home/atanasov2/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
-              - service: "trigger_srv"
-                timeout: 10
-              - package: "lt"
-                launch: "talker"
-              - service: "trigger_srv"
-              - service: "trigger_srv"
-              - service: "trigger_srv"
-              - package: "lt"
-                launch: "listener"
-              - service: "trigger_srv"
-              - service: "trigger_srv"
-              - service: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
+                  timeout: 10
+              - launch:
+                  name: "talker"
+                  package: "lt"
+              - service:
+                  name: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
+              - launch:
+                  name: "listener"
+                  package: "lt"
+              - service:
+                  name: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
+              - service:
+                  name: "trigger_srv"
     - modules:
         - name: "Call Trigger Service Server"
           type: "noview"
           menu_entry:
-            service: "trigger_srv"
-            timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
+            service:
+              name: "trigger_srv"
+              timeout: 5 # In seconds | determines how long the application will wait for the specified service to be available
 
         - name: "Launch Trigger Service Server"
           type: "noview"
           menu_entry:
-            package: "testing"
-            node: "trigger_srv_server.py"
+            node:
+              name: "trigger_srv_server.py"
+              package: "testing"
 
     - modules:
         - name: "RQT Graph"
           type: "noview"
           menu_entry: #rqt_graph, rqt_console
-            app: "rqt_graph" # Arguments can be included inside an args YAML node
+            app: 
+              name: "rqt_graph" # Arguments can be included inside an args YAML node
