@@ -24,6 +24,7 @@ dashboard:
             buttons:
               - node: 
                   name: "reconfigure_max_speed_srv.py"
+                  kill: "turtlesim"
                   package: "sr2_reconfigure_service"
               #- package: "sr2_reconfigure_service"
               #  node: "reconfigure_max_speed_to_fast_from_file.py"

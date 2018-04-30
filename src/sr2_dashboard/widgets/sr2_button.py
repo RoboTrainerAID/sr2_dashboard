@@ -16,8 +16,6 @@ from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqt
 import roslib
 roslib.load_manifest('sr2_dashboard')
 import rospy
-import rospkg
-import os
 # ROS-related  modules: RQT Robot Dashboard
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 # from rqt_robot_dashboard.widgets import ...
@@ -27,6 +25,7 @@ from ..misc.sr2_runnable_object import SR2ServiceRunnable
 from ..misc.sr2_runnable_object import SR2DynamicReconfigureServiceRunnable
 from ..misc.sr2_grid_generator import SR2GridGenerator as sr2gg
 from ..misc.sr2_ros_entry_extraction import SR2PkgCmdExtractor, IconType
+from subprocess import call
 
 # TODO Add button name to PID file to make workers for even same commands plus same arguments produce different files based on which part of the UI (toolbar, view) they belong to
 # TODO Replace IconToolButton with own, add parent attribute in order to properly clean up files and objects; Add stylesheet stuff to the custom QToolButton
@@ -174,9 +173,14 @@ class SR2ButtonExtProcess(QToolButton):
     # Args is the actual ROS node/launch file/etc. we want to start
     # (exception: see "app" case)
     args = ''
+    kill = '' #process to kill when being triggered
 
     def parse_yaml_entry(self, yamlEntry, type):
-         if 'package' in yamlEntry:
+        if 'kill' in yamlEntry:
+            self.kill = yamlEntry['kill']
+            if '/' not in self.kill:
+                self.kill = '/'+self.kill
+        if 'package' in yamlEntry:
             # We can have either a rosrun or roslaunch
             self.pkg = yamlEntry['package']
             rospy.logdebug('SR2: Found package "%s"', self.pkg)
@@ -192,7 +196,7 @@ class SR2ButtonExtProcess(QToolButton):
                 if '.launch' not in self.args:
                     self.args += '.launch'
                 rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
-         elif 'app' == type:
+        elif 'app' == type:
             # We have a standalone application
             self.cmd = yamlEntry['name']
             rospy.logdebug('SR2: Found standalone application "%s"', self.cmd)
@@ -200,8 +204,8 @@ class SR2ButtonExtProcess(QToolButton):
                 self.args = yamlEntry['args']
                 rospy.logdebug('SR2: Found arguments for standalone application "%s"', self.args)
                 self.timeout = 0
-            else:
-                rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
+        else:
+            rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
 
 
     # TODO Replace IconToolButton with own version (add parent property!)
@@ -242,7 +246,7 @@ class SR2ButtonExtProcess(QToolButton):
     def createWorker(self):
         '''
         Creates a worker (controls and monitors an external process), timer (worker reprots to the UI every 1s) and a thread (holds both the worker and timer)
-        '''
+        '''        
         # Create worker and connect the UI to it
         self.worker = None
         if self.pkg:
@@ -376,6 +380,9 @@ class SR2ButtonExtProcess(QToolButton):
 
         self.toggleControl = not self.toggleControl
         if self.toggleControl:
+            # Kill process if this is necessary to start own worker
+            if self.kill:
+                call(['rosnode', 'kill', self.kill])
             self.start_signal.emit()
         else:
             self.stop_signal.emit()
@@ -472,9 +479,14 @@ class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess
     # Args is the actual ROS node/launch file/etc. we want to start
     # (exception: see "app" case)
     args = ''
+    kill = '' #process to kill when being triggered
 
     def parse_yaml_entry(self, yamlEntry, type):
-         if 'package' in yamlEntry:
+        if 'kill' in yamlEntry:
+            self.kill = yamlEntry['kill']
+            if '/' not in self.kill:
+                self.kill = '/'+self.kill
+        if 'package' in yamlEntry:
             # We can have either a rosrun or roslaunch
             self.pkg = yamlEntry['package']
             rospy.logdebug('SR2: Found package "%s"', self.pkg)
@@ -490,16 +502,16 @@ class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess
                 if '.launch' not in self.args:
                     self.args += '.launch'
                 rospy.logdebug('SR2: Found roslaunch command for launch file "%s"', self.args)
-         elif 'app' == type:
-            # We have a standalone application
-            self.cmd = yamlEntry['name']
-            rospy.logdebug('SR2: Found standalone application "%s"', self.cmd)
-            if 'args' in yamlEntry:
-                self.args = yamlEntry['args']
-                rospy.logdebug('SR2: Found arguments for standalone application "%s"', self.args)
-                self.timeout = 0
-            else:
-                rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
+        elif 'app' == type:
+          # We have a standalone application
+          self.cmd = yamlEntry['name']
+          rospy.logdebug('SR2: Found standalone application "%s"', self.cmd)
+          if 'args' in yamlEntry:
+              self.args = yamlEntry['args']
+              rospy.logdebug('SR2: Found arguments for standalone application "%s"', self.args)
+              self.timeout = 0
+        else:
+            rospy.logerr('SR2: Unable to parse YAML node:\n%s', yamlEntry)
 
     def __init__(self, yamlEntry, type, name, display_name, icon, parent=None):
       
@@ -708,6 +720,9 @@ class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess
 
         self.toggleControl = not self.toggleControl
         if self.toggleControl:
+            # Kill process if this is necessary to start own worker
+            if self.kill:
+                call(['rosnode', 'kill', self.kill])
             self.start_signal.emit()
         else:
             self.stop_signal.emit()
