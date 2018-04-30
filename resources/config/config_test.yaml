@@ -33,6 +33,7 @@ dashboard:
                   name: "reconfigure_max_speed_to_fast_from_file"
               - service: 
                   name: "load_wall_config"
+                  icon: "service"
               - service:
                   name: "temp"
                   srv_type: 'dynamic_reconfigure'

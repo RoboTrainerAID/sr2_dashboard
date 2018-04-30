@@ -23,6 +23,28 @@ class IconType():
     error = 2
 
     @staticmethod
+    def generateImage(text):
+        proc_file = rospkg.RosPack().get_path('sr2_dashboard') + '/resources/images/default/default_proc.svg'
+        new_file = rospkg.RosPack().get_path('sr2_dashboard') + '/resources/images/default/'+text+'.svg'
+        if os.path.isfile(new_file):
+            return new_file
+        f1 = open(proc_file, 'r')
+        lines = f1.readlines()
+        lines[1487] = '         style="font-size:10px">'+text+'</tspan></text>\n'
+        f2 = open(new_file, 'w')
+        for line in lines:
+            f2.write(line)
+        return new_file
+      
+    @staticmethod
+    def iconIsPath(icon):
+        if not ".svg" in icon:
+              if not ".ico" in icon:
+                  if not ".png" in icon:
+                    return False  #expect icon to be text, not apth to an image
+        return True
+
+    @staticmethod
     # change view to icon_type (take type_* values) which will be used to load
     # default icon based on the functionality that the UI component using the
     # image has
@@ -40,8 +62,14 @@ class IconType():
         rp = rospkg.RosPack()
         error = False
 
+
+
         try:
             if icon_path:
+                if not IconType.iconIsPath(icon_path):
+                    rospy.logwarn('SR2: Icon parameter seems to be string, not path. Will use it as name instead of searching an image')
+                    icon_path = IconType.generateImage(icon_path)
+                    return icon_path
                 if icon_path.startswith('~'):
                     icon_path = os.path.expanduser(icon_path)
                 if pkg:
@@ -148,11 +176,11 @@ class SR2PkgCmdExtractor:
             type = 'service'
             icon_type = IconType.type_srv
 
-        if 'package' in yamlEntry:
-            pkg = yamlEntry['package']
+        if 'package' in yamlEntry[type]:
+            pkg = yamlEntry[type]['package']
 
-        if 'icon' in yamlEntry: #[type]:
-            icon_path = yamlEntry['icon']
+        if 'icon' in yamlEntry[type]:
+            icon_path = yamlEntry[type]['icon']
         
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         

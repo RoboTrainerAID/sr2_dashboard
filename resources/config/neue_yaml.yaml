@@ -1,0 +1,68 @@
+dashboard:
+#  init: # Critical component representing an external process that is crucial
+#        # for the proper working of the whole system. Until it is running the
+#        # rest of the toolbar components are disabled
+#        # In case it is terminated/crashes the rest of the toolbar components will be disabled
+#        # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
+#    name: "Initialization"
+#    type: "noview"
+#    menu_entry:
+#      #package: "cob_bringup"
+#      #launch: "robot"
+#      package: "lt"
+#      launch: "talker"
+
+  menus:
+    - modules:
+        - name: "Robotrainer"
+          type: "view"
+          menu_entry:
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - service:
+                  name: "robotrainer_modalities"
+                  srv_type: "dynamic_reconfigure"
+                  params: {x_max_vel: 1.2, y_max_vel: 1.2, x_max_force: 100, y_max_force: 100, rot_max_rot_vel: 1.2, rot_max_torque: 40, rot_time_const: 0.5, x_time_const: 0.5, y_time_const: 0.5}
+                  toggle_params: {x_max_vel: 0.8, y_max_vel: 0.8, x_max_force: 120, y_max_force: 120, rot_max_rot_vel: 0.5, rot_max_torque: 30.0, rot_time_const: 0.75, x_time_const: 1.5, y_time_const: 1.5}
+                
+        - name: "Gesture Control"
+          type: "view"
+          menu_entry:
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - launch:
+                  name: "gesture_control"
+                  package: "iirob_fsms"
+              - launch:
+                  name: "combine"
+                  package: "drive_program"
+              - launch:
+                  name: "drive"
+                  package: "drive_program"
+              - launch:
+                  name: "gesture_control_gui"
+                  package: "iirob_fsms"
+              
+                
+        - name: "SR2 Bringup Robotrainer"
+          type: "noview"
+          menu_entry:
+              launch:
+                name: "robotrainer.launch"
+                package: "sr2_bringup"
+                #icon: 
+              
+        - name: "SR2 Bringup Launch"
+          type: "noview"
+          menu_entry:
+              launch:
+                name: "sr2.launch neck:=true navigation:=true"
+                package: "sr2_bringup"
+                #args: ""
+                #icon: 
+              
+        - name: "Base Driver Init"
+          type: "noview"
+          menu_entry:
+              service:
+                name: "base/driver/init"
