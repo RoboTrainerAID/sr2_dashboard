@@ -110,9 +110,10 @@ class SR2Button():
                         return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, parent)
             elif yaml_entry_data['type'] == 'view':
                 # View
+                type, icon = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
                 rospy.logdebug(
                     '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yamlEntry)
-                return SR2ButtonWithView(yamlEntry, name, context, init_widget) #macht das "[type]" da sinn?
+                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget) #macht das "[type]" da sinn?
             else:
                 rospy.logerr(
                     'SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
@@ -209,7 +210,10 @@ class SR2ButtonExtProcess(QToolButton):
 
 
     # TODO Replace IconToolButton with own version (add parent property!)
-    def __init__(self, yamlEntry, type, name, icon, parent=None):
+    def __init__(self, yamlEntry, type, name, icon, parent=None, parentButton=None):
+      
+        self.parent = parent
+        self.parentButton = parentButton
       
         self.parse_yaml_entry(yamlEntry, type)
       
@@ -332,9 +336,12 @@ class SR2ButtonExtProcess(QToolButton):
             self.statusOkay = False
             self.active = True
             self.toggleControl = False
-
+            
         self.setToolTip(self.tooltip)
         self.setStyleSheet(style)
+        
+        if self.parentButton:
+            self.parentButton.reply(self.active)
 
     @pyqtSlot(bool)
     def block(self, block_flag):
@@ -787,7 +794,7 @@ class SR2ButtonService(QToolButton):
                 self.toggle_params = yamlEntry['toggle_params']
     
 
-    def __init__(self, yamlEntry, name, icon, parent=None, minimal=True):
+    def __init__(self, yamlEntry, name, icon, parent=None, minimal=True, parentButton=None):
       
         self.parse_yaml_entry(yamlEntry)
       
@@ -800,6 +807,8 @@ class SR2ButtonService(QToolButton):
 #        self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum)
         self.minimal = minimal
         self.name = name
+        
+        self.parentButton = parentButton
 
         rospy.logdebug(
             '\n----------------------------------\n\tSERVICE\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
@@ -833,6 +842,7 @@ class SR2ButtonService(QToolButton):
         '''
         If button is enabled, initiate a service call
         '''
+        
         if self.init_block_enabled:
             rospy.logerr(
                 'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
@@ -894,6 +904,11 @@ class SR2ButtonService(QToolButton):
             self.statusOkay = False
             rospy.logerr('SR2: Calling service %s failed due to "%s"',
                          self.srv_name, msg)
+            if self.parentButton:
+                try:
+                    self.parentButton.reply(False)
+                except Exception as e:
+                    rospy.logerr('SR2: Replying to parent failed due to: ' + e.message)
         else:
             if not self.toggled:
                 style = toolButtonStyle(self.icon, 89, 205, 139)
@@ -903,6 +918,11 @@ class SR2ButtonService(QToolButton):
                 style = toolButtonStyle(self.icon, 89, 205, 139, 6, 8)
                 rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
                               self.srv_name, ('True' if not status else 'False'), msg)
+            if self.parentButton:
+                try:
+                    self.parentButton.reply(True)
+                except Exception as e:
+                    rospy.logerr('SR2: Replying to parent failed due to: ' + e.message)
 
         self.tooltip = '<nobr>' + self.name + ' : "rosservice call ' + \
             self.srv_name + '"</nobr><br/>Reply: ' + msg
@@ -1028,6 +1048,7 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
             self.statusOkay = False
             self.service_caller.setToolTip(
                 'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's failed')
+            
         else:
             if not self.toggled: 
                 style = pushButtonStyle(self.icon, 89, 205, 139)
@@ -1182,7 +1203,7 @@ class SR2ButtonWithView(QToolButton):
         def restore_settings(self, plugin_settings, instance_settings):
             pass
 
-    def __init__(self, yaml_entry_data, name, context, surpress_overlays=False, minimal=True):
+    def __init__(self, yaml_entry_data, child_type, name, context, surpress_overlays=False, minimal=True):
         super(SR2ButtonWithView, self).__init__()
 
         self.icon = ''
@@ -1193,6 +1214,16 @@ class SR2ButtonWithView(QToolButton):
                 yaml_entry_data['icon'], icon_type=IconType.type_view)
         else:
             self.icon = IconType.checkImagePath(icon_type=IconType.type_view)
+
+        self.child_type = child_type
+
+        if self.child_type:
+            if self.child_type == 'service':
+                self.virtual_button = SR2ButtonService(yaml_entry_data['service'], name, self.icon, None, True, self)
+                self.virtual_button.block_override(False)
+            else:
+                self.virtual_button = SR2ButtonExtProcess(yaml_entry_data[child_type], child_type, name, self.icon, None, self)
+                self.virtual_button.block_override(False)
 
         style = toolButtonStyle(self.icon)
         self.setStyleSheet(style)
@@ -1239,10 +1270,69 @@ class SR2ButtonWithView(QToolButton):
         '''
         self.init_block_enabled = block_override_flag
 
+    def showException(self, e):
+        
+        if not self.view_widget:
+              # self.setIcon(self._icons[IconType.error])
+              style = toolButtonStyle(self.icon, 215, 56, 56)
+              # rospy.logwarn(self.yaml_view_buttons)
+              rospy.logerr(
+                  'SR2: Error during showing SR2View : %s', e.message)
+              rospy.logerr(self.name)
+              rospy.logerr(self.yaml_view_buttons)
+              self.toggled = False
+
+    def reply(self, status):
+      
+        if status:
+            self.showView()
+        else:
+            self.hideView()
+
+
+    def showView(self):
+      
+        try:
+            self.toggled = True
+            # self.setIcon(self._icons[IconType.running])
+            style = toolButtonStyle(self.icon, 89, 205, 139)
+            rospy.logdebug('SR2: Added SR2View "%s"', self.name)
+            self.view_widget = SR2ButtonWithView.SR2View(
+            self.name, self.yaml_view_buttons)
+            self.context.add_widget(self.view_widget)
+        except Exception as e:
+            self.showException(e)
+        finally:
+            self.setStyleSheet(style)
+
+    def hideView(self):
+      
+        try:
+            self.toggled = False
+            self.context.remove_widget(self.view_widget)
+            self.close()
+            #self.setIcon(self._icons[IconType.inactive])
+            style = toolButtonStyle(self.icon)
+            rospy.logdebug('SR2: Closed SR2View "%s"', self.name)
+        except Exception as e:
+            self.showException(e)
+        finally:
+            self.setStyleSheet(style)
+
     def toggleView(self):
         '''
         Toggles the visibility of the view (if such exists) that is connected to the menu entry
         '''
+        
+        # If this functionality is used, execute function of virtual_button
+        
+        if self.child_type:
+            if self.child_type == 'service':
+                self.virtual_button.call()
+            else:
+                self.virtual_button.toggle()
+            return;
+
         # Sadly the way the views in the dashboard work doesn't allow
         # for a view's components to emit feedback to the menu entry
         # since those are destroyed every  time the view is hidden thus
@@ -1258,38 +1348,13 @@ class SR2ButtonWithView(QToolButton):
 
         with QMutexLocker(self.show_mutex):
             style = ''
-            try:
-                if self.toggled:
-                    # If menu entry is already displaying a view, remove it
-                    self.toggled = False
-                    self.context.remove_widget(self.view_widget)
-                    self.close()
-#                    self.setIcon(self._icons[IconType.inactive])
-                    style = toolButtonStyle(self.icon)
-                    rospy.logdebug('SR2: Closed SR2View "%s"', self.name)
-                else:
-                    # If menu entry doesn't display a view, create it and
-                    # display it
-                    self.toggled = True
-#                    self.setIcon(self._icons[IconType.running])
-                    style = toolButtonStyle(self.icon, 89, 205, 139)
-                    rospy.logdebug('SR2: Added SR2View "%s"', self.name)
-                    self.view_widget = SR2ButtonWithView.SR2View(
-                        self.name, self.yaml_view_buttons)
-                    self.context.add_widget(self.view_widget)
-                    
-            except Exception as e:
-                if not self.view_widget:
-                    #                    self.setIcon(self._icons[IconType.error])
-                    style = toolButtonStyle(self.icon, 215, 56, 56)
-                    #rospy.logwarn(self.yaml_view_buttons)
-                    rospy.logerr(
-                        'SR2: Error during showing SR2View : %s', e.message)
-                    rospy.logerr(self.name)
-                    rospy.logerr(self.yaml_view_buttons)
-                self.toggled = False
-            finally:
-                self.setStyleSheet(style)
+            if self.toggled:
+                # If menu entry is already displaying a view, remove it
+                self.hideView()
+            else:
+                # If menu entry doesn't display a view, create it and
+                # display it
+                self.showView()
 
     def close(self):
         '''

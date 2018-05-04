@@ -21,6 +21,7 @@ dashboard:
             buttons:
               - service:
                   name: "robotrainer_modalities"
+                  icon: "Mod"
                   srv_type: "dynamic_reconfigure"
                   params: {x_max_vel: 1.2, y_max_vel: 1.2, x_max_force: 100, y_max_force: 100, rot_max_rot_vel: 1.2, rot_max_torque: 40, rot_time_const: 0.5, x_time_const: 0.5, y_time_const: 0.5}
                   toggle_params: {x_max_vel: 0.8, y_max_vel: 0.8, x_max_force: 120, y_max_force: 120, rot_max_rot_vel: 0.5, rot_max_torque: 30.0, rot_time_const: 0.75, x_time_const: 1.5, y_time_const: 1.5}
@@ -32,15 +33,19 @@ dashboard:
             buttons:
               - launch:
                   name: "gesture_control"
+                  icon: "Ges"
                   package: "iirob_fsms"
               - launch:
                   name: "combine"
+                  icon: "Cmb"
                   package: "drive_program"
               - launch:
                   name: "drive"
+                  icon: "Drv"
                   package: "drive_program"
               - launch:
                   name: "gesture_control_gui"
+                  icon: "Gui"
                   package: "iirob_fsms"
               
                 
@@ -49,6 +54,7 @@ dashboard:
           menu_entry:
               launch:
                 name: "robotrainer.launch"
+                icon: "RT"
                 package: "sr2_bringup"
                 #icon: 
               
@@ -57,6 +63,7 @@ dashboard:
           menu_entry:
               launch:
                 name: "sr2.launch neck:=true navigation:=true"
+                icon: "BU"
                 package: "sr2_bringup"
                 #args: ""
                 #icon: 
@@ -66,3 +73,4 @@ dashboard:
           menu_entry:
               service:
                 name: "base/driver/init"
+                icon: "Drv"

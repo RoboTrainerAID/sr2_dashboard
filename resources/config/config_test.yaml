@@ -20,14 +20,14 @@ dashboard:
         - name: "Test Stuff"
           type: "view"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
-            buttons:
-              - node: 
+            node: 
                   name: "reconfigure_max_speed_srv.py"
                   kill: "turtlesim"
                   package: "sr2_reconfigure_service"
-              #- package: "sr2_reconfigure_service"
-              #  node: "reconfigure_max_speed_to_fast_from_file.py"
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              #- node: "reconfigure_max_speed_to_fast_from_file.py"
+              #   package: "sr2_reconfigure_service"
               - service: 
                   name: "reconfigure_max_speed_srv"
               - service: 

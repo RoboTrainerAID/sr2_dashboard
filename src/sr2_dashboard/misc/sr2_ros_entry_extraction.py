@@ -176,11 +176,13 @@ class SR2PkgCmdExtractor:
             type = 'service'
             icon_type = IconType.type_srv
 
-        if 'package' in yamlEntry[type]:
-            pkg = yamlEntry[type]['package']
+        if type:
+            if 'package' in yamlEntry[type]:
+                pkg = yamlEntry[type]['package']
 
-        if 'icon' in yamlEntry[type]:
-            icon_path = yamlEntry[type]['icon']
+        if type:
+            if 'icon' in yamlEntry[type]:
+                icon_path = yamlEntry[type]['icon']
         
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         
