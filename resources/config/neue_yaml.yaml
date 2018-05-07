@@ -48,6 +48,10 @@ dashboard:
                   icon: "Gui"
                   package: "iirob_fsms"
               
+        - name: "View vs Noview"
+          type: "divisor"
+          menu_entry:
+              icon: "|"
                 
         - name: "SR2 Bringup Robotrainer"
           type: "noview"

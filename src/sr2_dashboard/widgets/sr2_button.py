@@ -113,7 +113,13 @@ class SR2Button():
                 type, icon = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
                 rospy.logdebug(
                     '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yamlEntry)
-                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget) #macht das "[type]" da sinn?
+                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget) #ergibt das "[type]" da sinn?
+            elif yaml_entry_data['type'] == 'divisor':
+                # Divisor
+                icon = IconType.getDivisor()
+                rospy.logdebug(
+                    '\n----------------------------------\n\tCREATE TOOLBAR DIVISOR\n@Yaml_Contents: \n----------------------------------')
+                return SR2Divisor(name, icon, parent)
             else:
                 rospy.logerr(
                     'SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
@@ -155,6 +161,28 @@ class SR2ToolButton(QToolButton):
         self.setToolTip(self.name)
 
         # Todo ...
+
+class SR2Divisor(QToolButton):
+  
+    def __init__(self, name, icon, parent = None):
+      
+        self.parent = parent
+        
+        super(SR2Divisor, self).__init__()
+        
+        self.enabled = False
+        self.icon = icon
+        style = toolButtonStyle(icon)
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
+        self.setObjectName(name)
+        self.name = name
+        self.setToolTip(self.name)
+
+        self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
+        self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
+        self.toggleControl = False
+        self.setToolTip('Divisor ' + self.name)
 
 ##########################################################################
 # SR2ButtonExtPro

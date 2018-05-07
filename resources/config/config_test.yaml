@@ -20,32 +20,38 @@ dashboard:
         - name: "Test Stuff"
           type: "view"
           menu_entry:
-            node: 
-                  name: "reconfigure_max_speed_srv.py"
-                  kill: "turtlesim"
-                  package: "sr2_reconfigure_service"
+#            node: 
+#                  name: "reconfigure_max_speed_srv.py"
+#                  kill: "turtlesim"
+#                  package: "sr2_reconfigure_service"
             icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
             buttons:
               #- node: "reconfigure_max_speed_to_fast_from_file.py"
               #   package: "sr2_reconfigure_service"
               - service: 
                   name: "reconfigure_max_speed_srv"
-              - service: 
-                  name: "reconfigure_max_speed_to_fast_from_file"
-              - service: 
-                  name: "load_wall_config"
-                  icon: "service"
-              - service:
-                  name: "temp"
-                  srv_type: 'dynamic_reconfigure'
-                  params: {"fast":3, "normal":1, "walls":"baum"}
-                  toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+                  icon: "My"
+#              - service: 
+#                  name: "reconfigure_max_speed_to_fast_from_file"
+#              - service: 
+#                  name: "load_wall_config"
+#                  icon: "service"
+#              - service:
+#                  name: "temp"
+#                  srv_type: 'dynamic_reconfigure'
+#                  params: {"fast":3, "normal":1, "walls":"baum"}
+#                  toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+                  
+#        - name: "View vs Noview"
+#          type: "divisor"
+#          menu_entry:
+#              icon: "|"
                 
-        - name: "Call a test dynamic reconfigure"
-          type: "noview"
-          menu_entry:
-              service:
-                name: "temp"
-                srv_type: 'dynamic_reconfigure'
-                params: {"fast":3, "normal":1, "walls":"baum"}
-                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+#        - name: "Call a test dynamic reconfigure"
+#          type: "noview"
+#          menu_entry:
+#              service:
+#                name: "temp"
+#                srv_type: 'dynamic_reconfigure'
+#                params: {"fast":3, "normal":1, "walls":"baum"}
+#                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}

@@ -35,6 +35,10 @@ class IconType():
         for line in lines:
             f2.write(line)
         return new_file
+    
+    @staticmethod
+    def getDivisor():
+        return rospkg.RosPack().get_path('sr2_dashboard') + '/resources/images/default/Line.png'
       
     @staticmethod
     def iconIsPath(icon):
