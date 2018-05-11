@@ -162,7 +162,7 @@ class SR2ToolButton(QToolButton):
 
         # Todo ...
 
-class SR2Divisor(QToolButton):
+class SR2Divisor(QLabel):
   
     def __init__(self, name, icon, parent = None):
       
@@ -170,19 +170,20 @@ class SR2Divisor(QToolButton):
         
         super(SR2Divisor, self).__init__()
         
-        self.enabled = False
-        self.icon = icon
-        style = toolButtonStyle(icon)
-        self.setStyleSheet(style)
+        #self.enabled = False
+        #self.icon = icon
+        #style = toolButtonStyle(icon)
+        #self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
         self.setObjectName(name)
         self.name = name
-        self.setToolTip(self.name)
+        #self.setToolTip(self.name)
 
-        self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
-        self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
-        self.toggleControl = False
-        self.setToolTip('Divisor ' + self.name)
+        #self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
+        #self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
+        #self.toggleControl = False
+        #self.setToolTip('Divisor ' + self.name)
+        self.setText('|')
 
 ##########################################################################
 # SR2ButtonExtPro
