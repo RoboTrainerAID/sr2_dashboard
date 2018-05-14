@@ -31,6 +31,13 @@ dashboard:
               - service: 
                   name: "reconfigure_max_speed_srv"
                   icon: "My"
+              - multi:
+                  - service: 
+                      name: "reconfigure_max_speed_srv"
+                      icon: "My"
+                  - node:
+                      name: "turtlesim_node"
+                      package: "turtlesim"
 #              - service: 
 #                  name: "reconfigure_max_speed_to_fast_from_file"
 #              - service: 

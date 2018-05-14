@@ -179,6 +179,9 @@ class SR2PkgCmdExtractor:
         elif 'service' in yamlEntry:
             type = 'service'
             icon_type = IconType.type_srv
+        elif 'multi' in yamlEntry:
+            type = 'multi'
+            icon_type = IconType.type_none
 
         if type:
             if 'package' in yamlEntry[type]:

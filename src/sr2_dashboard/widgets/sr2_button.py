@@ -63,7 +63,7 @@ class Status():
 class SR2Button():
 
     @staticmethod
-    def createButton(context, yaml_entry_data, name, display_name=None, parent=None, init=False, init_widget=None):
+    def createButton(context, yaml_entry_data, name, display_name=None, parent=None, init=False, init_widget=None, parent_button=None):
         '''
         Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
 
@@ -101,19 +101,22 @@ class SR2Button():
                         rospy.logerr(
                             'SR2: Trying to create noview service button but service target is empty')
                         return None
-                    return SR2ButtonService(yamlEntry['service'], name, icon, parent)
+                    return SR2ButtonService(yamlEntry['service'], name, icon, parent, parent_button)
+                elif type == 'multi':
+                    # Multi-Type type
+                    return SR2ButtonMulti(yamlEntry['multi'], name, icon, parent)
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
                         return SR2ButtonInitExtProcess(yamlEntry[type], type, name, icon, parent)
                     else:
-                        return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, parent)
+                        return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, parent, parent_button)
             elif yaml_entry_data['type'] == 'view':
                 # View
                 type, icon = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
                 rospy.logdebug(
                     '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yamlEntry)
-                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget) #ergibt das "[type]" da sinn?
+                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget)
             elif yaml_entry_data['type'] == 'divisor':
                 # Divisor
                 icon = IconType.getDivisor()
@@ -122,7 +125,7 @@ class SR2Button():
                 return SR2Divisor(name, icon, parent)
             else:
                 rospy.logerr(
-                    'SR2: Unknown type of entry. Please make sure to specify "type" as either "noview" or "view"')
+                    'SR2: Unknown type of entry. Please make sure to specify "type" as either "noview", "view" or "divisor"')
                 return None
         else:
             # We have an entry that is part of a view
@@ -137,6 +140,9 @@ class SR2Button():
                         'SR2: Trying to create noview service button but service target is empty')
                     return None
                 return SR2ViewButtonService(yaml_entry_data['service'], name, display_name, icon, parent)
+            elif type == 'multi':
+                    # Multi-Type type
+                    return SR2ViewButtonMulti(yaml_entry_data['multi'], name, icon, parent)
             else:
                 # External process (roslaunch, rosrun or app)
                 return SR2ViewButtonExtProcess(yaml_entry_data[type], type, name, display_name, icon, parent)
@@ -1162,6 +1168,63 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
 
         self.setLayout(layout)
         self.resize(layout.sizeHint())
+
+class SR2ButtonMulit(QToolButton):
+    def __init__(self, yaml_content, name, icon, parent = None):
+        super(SR2ButtonMulit, self).__init__(parent)
+        
+        self.name = name
+        self.setObjectName(name)
+        self.icon = icon
+        self.status =True
+        self.entries = []
+        
+        self.setupButton()
+        
+        idx = 0
+        for yaml_content_entry in yaml_content:
+            type, icon_ = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_content_entry)
+            entry = SR2Button.createButton(None, yaml_content_entry, name + str(idx), None, self, False, None, self)
+            if not entry:
+                continue
+            self.entries.append((type, entry))
+            idx += 1
+            
+        self.clicked.connect(self.call)
+            
+    def call(self):
+        self.replies = 0
+        self.status = True
+        for entry in self.entries:
+            if entry[0] == 'service':
+                entry[1].call()
+            else:
+                entry[1].toggle()
+                
+    #called by child processes on completion/failure
+    def reply(self, status):
+        self.replies += 1
+        if not status:
+            self.status = False
+        if self.replies < len(self.entries):
+            return
+        if not self.status:
+            for entry in self.entries:
+                if entry[0] == 'service':
+                    entry[1].call()
+                else:
+                    entry[1].toggle()
+            
+    def setupButton(self):
+        style = toolButtonStyle(self.icon)
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
+            
+class SR2ViewButtonMulti(SR2ButtonMulit):
+    def setupButton(self):
+        style = toolButtonStyle(self.icon)
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
 
 ##########################################################################
 # SR2ToolbarButtonWi
