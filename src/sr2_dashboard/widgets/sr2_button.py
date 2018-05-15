@@ -578,8 +578,7 @@ class SR2ViewButtonExtProcess(QWidget): #cannot inherit from SR2ButtonExtProcess
         controls_layout.addItem(spacer)
         self.execute_button = QPushButton(self)
         self.execute_button.setStyleSheet(style)
-        self.execute_button.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.execute_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
             (' ' + self.args) if self.args else '') + '"' + ' inactive'
         self.execute_button.setToolTip(self.tooltip)
@@ -1169,9 +1168,9 @@ class SR2ViewButtonService(QWidget): #cannot inherit from SR2ButtonService becau
         self.setLayout(layout)
         self.resize(layout.sizeHint())
 
-class SR2ButtonMulit(QToolButton):
+class SR2ButtonMulti(QWidget):
     def __init__(self, yaml_content, name, icon, parent = None):
-        super(SR2ButtonMulit, self).__init__(parent)
+        super(SR2ButtonMulti, self).__init__(parent)
         
         self.name = name
         self.setObjectName(name)
@@ -1179,18 +1178,19 @@ class SR2ButtonMulit(QToolButton):
         self.status =True
         self.entries = []
         
-        self.setupButton()
-        
         idx = 0
         for yaml_content_entry in yaml_content:
             type, icon_ = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_content_entry)
-            entry = SR2Button.createButton(None, yaml_content_entry, name + str(idx), None, self, False, None, self)
+            entry = SR2Button.createButton(None, yaml_content_entry, name + str(idx), None, None, False, None, self)
             if not entry:
                 continue
+            entry.init_block_enabled = False
             self.entries.append((type, entry))
             idx += 1
+        
+        self.setupButton()
             
-        self.clicked.connect(self.call)
+            #self.execute_button.clicked.connect(self.call)
             
     def call(self):
         self.replies = 0
@@ -1217,14 +1217,50 @@ class SR2ButtonMulit(QToolButton):
             
     def setupButton(self):
         style = toolButtonStyle(self.icon)
-        self.setStyleSheet(style)
-        self.setFixedSize(QSize(36, 36))
+        #self.setStyleSheet(style)
+        self.execute_button = QToolButton(self)
+        self.execute_button.setStyleSheet(style)
+        self.execute_button.setFixedSize(QSize(36, 36))
+        
+        self.execute_button.clicked.connect(self.call)
             
-class SR2ViewButtonMulti(SR2ButtonMulit):
+class SR2ViewButtonMulti(SR2ButtonMulti):
     def setupButton(self):
-        style = toolButtonStyle(self.icon)
-        self.setStyleSheet(style)
-        self.setFixedSize(QSize(36, 36))
+        layout = QVBoxLayout(self)
+        layout.setObjectName(self.name)
+        
+        controls_layout = QHBoxLayout()
+        spacer = QSpacerItem(40, 20, QSizePolicy.Preferred,
+                             QSizePolicy.Preferred)
+        controls_layout.addItem(spacer)
+        
+        self.execute_button = QPushButton(self)
+        style = pushButtonStyle(self.icon)
+        self.execute_button.setStyleSheet(style)
+        self.execute_button.setToolTip(
+            'Execute multiple commands')
+        self.execute_button.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding)
+        controls_layout.addWidget(self.execute_button)
+        spacer2 = QSpacerItem(
+            40, 20, QSizePolicy.Preferred, QSizePolicy.Preferred)
+        controls_layout.addItem(spacer2)
+        layout.addLayout(controls_layout)
+        self.execute_button.setStyleSheet(style)
+        self.execute_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.execute_button.setObjectName(self.name)
+        self.execute_button.icon = self.icon
+        
+        info_layout = QVBoxLayout()
+        line = QFrame(self)
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        info_layout.addWidget(line)
+        layout.addLayout(info_layout)
+        self.setLayout(layout)
+        self.resize(layout.sizeHint())
+        
+        self.execute_button.clicked.connect(self.call)
 
 ##########################################################################
 # SR2ToolbarButtonWi

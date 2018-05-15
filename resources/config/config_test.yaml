@@ -54,11 +54,13 @@ dashboard:
 #          menu_entry:
 #              icon: "|"
                 
-#        - name: "Call a test dynamic reconfigure"
-#          type: "noview"
-#          menu_entry:
-#              service:
-#                name: "temp"
-#                srv_type: 'dynamic_reconfigure'
-#                params: {"fast":3, "normal":1, "walls":"baum"}
-#                toggle_params: {"fast":2, "normal":1, "walls":"apfel"}
+        - name: "Call a test multi"
+          type: "noview"
+          menu_entry:
+              multi:
+                  - service: 
+                      name: "reconfigure_max_speed_srv"
+                      icon: "My"
+                  - node:
+                      name: "turtlesim_node"
+                      package: "turtlesim"
