@@ -21,7 +21,7 @@ dashboard:
           type: "view"
           menu_entry:
             node: 
-                  name: "reconfigure_max_speed_srv.py"
+                  name: "reconfigure_max_speed_srv"
                   kill: "turtlesim"
                   package: "sr2_reconfigure_service"
             icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"

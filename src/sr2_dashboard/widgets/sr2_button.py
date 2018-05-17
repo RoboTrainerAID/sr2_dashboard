@@ -1220,7 +1220,7 @@ class SR2ButtonMulti(QWidget):
         #self.setStyleSheet(style)
         self.execute_button = QToolButton(self)
         self.execute_button.setStyleSheet(style)
-        self.execute_button.setFixedSize(QSize(36, 36))
+        #self.execute_button.setFixedSize(QSize(36, 36))
         self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
         
@@ -1350,10 +1350,11 @@ class SR2ButtonWithView(QToolButton):
         if self.child_type:
             if self.child_type == 'service':
                 self.virtual_button = SR2ButtonService(yaml_entry_data['service'], name, self.icon, None, True, self)
-                self.virtual_button.block_override(False)
             else:
                 self.virtual_button = SR2ButtonExtProcess(yaml_entry_data[child_type], child_type, name, self.icon, None, self)
-                self.virtual_button.block_override(False)
+                
+        self.virtual_button.block_override(False)
+        self.virtual_button.init_block_enabled = False
 
         style = toolButtonStyle(self.icon)
         self.setStyleSheet(style)
@@ -1457,7 +1458,7 @@ class SR2ButtonWithView(QToolButton):
         # If this functionality is used, execute function of virtual_button
         
         if self.child_type:
-            if self.child_type == 'service':
+            if self.child_type == 'service' or self.child_type == 'multi':
                 self.virtual_button.call()
             else:
                 self.virtual_button.toggle()
