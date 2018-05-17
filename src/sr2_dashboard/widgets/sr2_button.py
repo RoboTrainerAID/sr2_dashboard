@@ -1353,8 +1353,8 @@ class SR2ButtonWithView(QToolButton):
             else:
                 self.virtual_button = SR2ButtonExtProcess(yaml_entry_data[child_type], child_type, name, self.icon, None, self)
                 
-        self.virtual_button.block_override(False)
-        self.virtual_button.init_block_enabled = False
+            self.virtual_button.block_override(False)
+            self.virtual_button.init_block_enabled = False
 
         style = toolButtonStyle(self.icon)
         self.setStyleSheet(style)
