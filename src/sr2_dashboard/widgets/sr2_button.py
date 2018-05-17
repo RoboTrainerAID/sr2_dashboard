@@ -1221,6 +1221,8 @@ class SR2ButtonMulti(QWidget):
         self.execute_button = QToolButton(self)
         self.execute_button.setStyleSheet(style)
         self.execute_button.setFixedSize(QSize(36, 36))
+        self.setStyleSheet(style)
+        self.setFixedSize(QSize(36, 36))
         
         self.execute_button.clicked.connect(self.call)
             
