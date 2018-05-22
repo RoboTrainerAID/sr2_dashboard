@@ -67,3 +67,9 @@ dashboard:
                   - node:
                       name: "turtlesim_node"
                       package: "turtlesim"
+        - name: "Call a test turtle sim"
+          type: "noview"
+          menu_entry:
+              node:
+                  name: "turtlesim_node"
+                  package: "turtlesim"

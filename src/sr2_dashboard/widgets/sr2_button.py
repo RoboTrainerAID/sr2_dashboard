@@ -81,6 +81,7 @@ def setupToolButton(widget):
         widget.button.setStyleSheet(style)
         widget.setStyleSheet(style)
         widget.setFixedSize(QSize(36, 36))
+        widget.button.setFixedSize(QSize(36, 36))
         #widget.button.clicked.connect(widget.call)
         return widget
 
