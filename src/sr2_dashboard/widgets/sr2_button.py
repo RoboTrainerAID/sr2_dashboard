@@ -58,22 +58,21 @@ def pushButtonStyle(icon, r = None, g = None, b = None, margin = None, border_ra
 def toolButtonStyle(icon, r = None, g = None, b = None, margin = None, border_radius = None):
     return buttonStyle('QToolButton', icon, r, g, b, margin, border_radius)
 
-def setButtonStatusStyle(widget, status, type):
+def statusStyle(widget, status, type):
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
-        widget.setStyleSheet(buttonStyle(type, widget.icon))
+        return buttonStyle(type, widget.icon)
     elif status == ProcStatus.RUNNING:
-        widget.setStyleSheet(buttonStyle(type, widget.icon, 89, 205, 139))
+        return buttonStyle(type, widget.icon, 89, 205, 139)
     elif status == ProcStatus.FAILED_START:
-        widget.setStyleSheet(buttonStyle(type, widget.icon, 215, 56, 56))
+        return buttonStyle(type, widget.icon, 215, 56, 56)
     elif status == ProcStatus.FAILED_STOP:
-        widget.setStyleSheet(buttonStyle(type, widget.icon, 215, 56, 56))
-    return widget
+        return buttonStyle(type, widget.icon, 215, 56, 56)
 
-def setToolButtonStatusStyle(widget, status):
-    return setButtonStatusStyle(widget, status, 'QToolButton')
+def toolButtonStatusStyle(widget, status):
+    return statusStyle(widget, status, 'QToolButton')
   
-def setPushButtonStatusStyle(widget, status):
-    return setButtonStatusStyle(widget, status,'QPushButton')
+def pushButtonStatusStyle(widget, status):
+    return statusStyle(widget, status,'QPushButton')
 
 #help method to give a widget a toolButton property (used in multiple classes)
 def setupToolButton(widget):
@@ -82,6 +81,7 @@ def setupToolButton(widget):
         widget.button.setStyleSheet(style)
         widget.setStyleSheet(style)
         widget.setFixedSize(QSize(36, 36))
+        #widget.button.clicked.connect(widget.call)
         return widget
 
 #help method to give a widget a pushButton property (used in multiple classes)
@@ -159,6 +159,7 @@ class Status():
 class SR2Button():
 
     @staticmethod
+                                    #(None, yaml_content_entry, name + str(idx), None, None, False, None, self)
     def createButton(context, yaml_entry_data, name, display_name=None, parent=None, init=False, init_widget=None, parent_button=None):
         '''
         Parses a YAML node for either a toolbar or a view. Based on successful parsing results on of the following types of buttons will be returned:
@@ -234,16 +235,15 @@ class SR2Button():
             if type == 'service':
                 # Service
                 if not yaml_entry_data['service']['name']:
-                    rospy.logerr(
-                        'SR2: Trying to create noview service button but service target is empty')
+                    rospy.logerr('SR2: Trying to create noview service button but service target is empty')
                     return None
-                return SR2ViewButtonService(yaml_entry_data['service'], name, display_name, icon, parent)
+                return SR2ViewButtonService(yaml_entry_data['service'], name, display_name, icon, parent, parent_button)
             elif type == 'multi':
                     # Multi-Type type
-                    return SR2ViewButtonMulti(yaml_entry_data['multi'], name, icon, parent)
+                    return SR2ViewButtonMulti(yaml_entry_data['multi'], name, icon, parent, parent_button)
             else:
                 # External process (roslaunch, rosrun or app)
-                return SR2ViewButtonExtProcess(yaml_entry_data[type], type, name, display_name, icon, parent)
+                return SR2ViewButtonExtProcess(yaml_entry_data[type], type, name, display_name, icon, parent, parent_button)
 
 ############## SR2Divisor ############
 
@@ -397,8 +397,6 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
         self.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') +
                         ((' ' + self.args) if self.args else '') + '"' + ' inactive')
 
-        self.button.clicked.connect(self.toggle)
-
         self.mutex_recovery = QMutex()
         self.mutex_status = QMutex()
 
@@ -482,7 +480,7 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
             self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
                 (' ' + self.args) if self.args else '') + '"' + ' failed to start'
             self.statusOkay = False
-            self.active = True
+            self.active = False
             self.toggleControl = False
         elif status == ProcStatus.FAILED_STOP:
             rospy.logerr('SR2: Status has changed to: FAILED_STOP')
@@ -490,13 +488,14 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
             self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + (
                 (' ' + self.args) if self.args else '') + '"' + ' failed to stop'
             self.statusOkay = False
-            self.active = True
+            self.active = False
             self.toggleControl = False
             
         self.setToolTip(self.tooltip)
         self.setStatusStyle(status)
         
         if self.parentButton:
+            self.statusOkay = True #error acknowledged will be handled by parentButton
             self.parentButton.reply(self.active)
 
     @pyqtSlot(bool)
@@ -519,11 +518,12 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
         '''
         self.init_block_enabled = block_override_flag
 
-    def call(self):
-        self.toggle()
+    #def call(self):
+        #self.call()
+        #baum = 5
 
     @pyqtSlot()
-    def toggle(self):
+    def call(self):
         '''
         Handles the start, stopping and error confirmation triggered by the button
 
@@ -531,12 +531,11 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
           - **both statusOkay and toggleControl are True** - attempt to start the process
           - **statusOkay is True but toggleControl is False** - attempt to stop the process
         '''
-	#if self.init_block_enabled: #shouldn't this be: "if NOT enbabled?!
+
         if hasinit:
-		if not self.init_block_enabled:  
-            		rospy.logerr(
-                	'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            		return
+            if not self.init_block_enabled:  
+                rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+                return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
@@ -565,7 +564,7 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
         self.statusOkay = True
         
     def setStatusStyle(self, status):
-        self = setToolButtonStatusStyle(self, status)
+        self.setStyleSheet(toolButtonStatusStyle(self, status))
         
 
 ##########################################################################
@@ -624,7 +623,7 @@ class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
         self.block_override.emit(False)
 
 ##########################################################################
-# SR2ButtonExtPro
+# SR2ButtonExtProcess
 ##########################################################################
 
 
@@ -642,7 +641,7 @@ class SR2ViewButtonExtProcess(SR2ButtonExtProcess):
         setupPushButton(self)
         
     def setStatusStyle(self, status):
-        self = setPushButtonStatusStyle(self, status)
+        self.button.setStyleSheet(pushButtonStatusStyle(self, status))
 
 ##########################################################################
 # SR2ToolbarButtonService
@@ -681,7 +680,7 @@ class SR2ButtonService(SR2ButtonDefault):
         self.service.setAutoDelete(False)
         self.service.signals.srv_running.connect(self.block)
         self.service.signals.srv_status.connect(self.reply)
-        self.button.clicked.connect(self.call)
+        #self.button.clicked.connect(self.call)
 
         self.disabled = False
         self.toggled = False
@@ -798,9 +797,8 @@ class SR2ViewButtonService(SR2ButtonService): #cannot inherit from SR2ButtonServ
     '''
     Part of a view; initiates a service call and reports back once service has replied or timeout
     '''
-     
-    def __init__(self, yaml_entry_data, name, display_name, icon, parent=None):
-        super(SR2ViewButtonService, self).__init__(yaml_entry_data, name, icon, parent)
+    def __init__(self, yaml_entry_data, name, display_name, icon, parent=None, parentButton=None):
+        super(SR2ViewButtonService, self).__init__(yaml_entry_data, name, icon, parent, True, parentButton)
      
     def setupButton(self):
         self.tooltip = 'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's inactive'
@@ -826,31 +824,35 @@ class SR2ViewButtonService(SR2ButtonService): #cannot inherit from SR2ButtonServ
         style = ''
         if status in [SR2ServiceRunnable.CallStatus.FAILED, SR2ServiceRunnable.CallStatus.SUCCESS_FALSE]:
             style = pushButtonStyle(self.icon, 215, 56, 56)
-            rospy.logerr(
-                'SR2: Calling service %s failed due to "%s"', self.srv_name, msg)
-            self.reply_statL.setText(
-                'Reply status: <font color=\"red\">Error</font>')
-            self.reply_msgL.setText(
-                'Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
+            rospy.logerr('SR2: Calling service %s failed due to "%s"', self.srv_name, msg)
+            self.reply_statL.setText('Reply status: <font color=\"red\">Error</font>')
+            self.reply_msgL.setText('Reply message: <font color=\"red\">' + msg.split('for service', 1)[0] + '</font>')
             self.statusOkay = False
-            self.button.setToolTip(
-                'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's failed')
+            self.button.setToolTip('Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's failed')
+            if self.parentButton:
+                self.parentButton.reply(False)
             
         else:
             if not self.toggled: 
                 style = pushButtonStyle(self.icon, 89, 205, 139)
             else: 
                 style = pushButtonStyle(self.icon, 89, 205, 139, 24, 32)
+                
             rospy.loginfo('SR2: Calling service %s successful. Service returned status %s with message "%s"',
                           self.srv_name, ('True' if not status else 'False'), msg)
             self.reply_statL.setText('Reply status: ' + ('True' if status ==
                                                          SR2ServiceRunnable.CallStatus.SUCCESS_TRUE else 'False'))
             self.reply_msgL.setText('Reply message: ' + msg)
-            self.button.setToolTip(
-                'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's successful')
+            self.button.setToolTip('Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's successful')
+            if self.parentButton:
+                self.parentButton.reply(True)
 
         self.button.setStyleSheet(style)
         self.button.setDisabled(False)
+
+##########################################################################
+# SR2ToolbarButtonMulti
+##########################################################################
 
 class SR2ButtonMulti(SR2ButtonDefault):
     def __init__(self, yaml_content, name, icon, parent = None, parent_button = None):
@@ -871,40 +873,64 @@ class SR2ButtonMulti(SR2ButtonDefault):
             #self.button.clicked.connect(self.call)
             
     def call(self):
-        self.replies = 0
-        self.statusOkay = True
-        for entry in self.entries:
-            if entry[0] == 'service':
+        
+        if self.statusOkay:
+            self.replies = 0
+            for entry in self.entries:
                 entry[1].call()
-            else:
-                entry[1].toggle()
+        else:
+            self.statusOkay = True
+            rospy.loginfo('SR2: Error acknowledged')
+            self.setStatusStyle(ProcStatus.INACTIVE)
                 
     #called by child processes on completion/failure
     def reply(self, statusOkay):
+        #count replies (wait for replies from all processes)
         self.replies += 1
+        #if one reply is negative, concider whole interaction failed
         if not statusOkay:
             self.statusOkay = False
+        #wait for replies from all processes
         if self.replies < len(self.entries):
             return
+        #
         if not self.statusOkay:
             for entry in self.entries:
+                entry[1].call()
                 if entry[0] == 'service':
-                    entry[1].call()
+                    entry[1].statusOkay = True
                 else:
-                    entry[1].toggle()
-        self.parentButton.reply(statusOkay)
+                    entry[1].status = ProcStatus.FINISHED
+            self.replies = 0 #only perform when a failure is Detected and consequences are taken
+        #in total => if all processes have ever replied and then one dies at any time, kill (by  toggling) them all => if one process fails on startup, wait for all to start and kill them all, if one fails after all have started, kill them all.
+        if self.parentButton:
+            self.parentButton.reply(self.statusOkay)
+            
+        if self.statusOkay:
+            self.setStatusStyle(ProcStatus.RUNNING)
+        else:
+            if self.replies == len(self.entries):
+                self.setStatusStyle(ProcStatus.FAILED_START)
+            else:
+                self.setStatusStyle(ProcStatus.FAILED_STOP)
             
     def setupButton(self):
         self.tooltip = 'Execute multiple commands'
         self = setupToolButton(self)
+        
+    def setStatusStyle(self, status):
+        self.button.setStyleSheet(pushButtonStatusStyle(self, status))
             
 class SR2ViewButtonMulti(SR2ButtonMulti):
     def setupButton(self):
         self.tooltip = 'Execute multiple commands'
         self = setupPushButton(self, 'multi')
+    
+    def setStatusStyle(self, status):
+        self.button.setStyleSheet(pushButtonStatusStyle(self, status))
 
 ##########################################################################
-# SR2ToolbarButtonWi
+# SR2ToolbarButtonWithView
 ##########################################################################
 
 
@@ -975,6 +1001,8 @@ class SR2ButtonWithView(QToolButton):
     def __init__(self, yaml_entry_data, child_type, name, context, surpress_overlays=False, minimal=True):
         super(SR2ButtonWithView, self).__init__()
 
+        self.clicked.connect(self.toggleView)
+
         self.icon = ''
         if 'icon' in yaml_entry_data:
             # Set icon: IconType.checkImagePath(yaml_entry_data['icon'],
@@ -1016,7 +1044,6 @@ class SR2ButtonWithView(QToolButton):
         self.minimal = minimal
         self.name = name
         self.toggled = False
-        self.clicked.connect(self.toggleView)
         self.context = context
         self.setToolTip(self.name)
         self.setFixedSize(QSize(36, 36))
@@ -1097,23 +1124,20 @@ class SR2ButtonWithView(QToolButton):
         # If this functionality is used, execute function of virtual_button
         
         if self.child_type:
-            if self.child_type == 'service' or self.child_type == 'multi':
-                self.virtual_button.call()
-            else:
-                self.virtual_button.toggle()
-            return;
+            self.virtual_button.call()
+            return
 
         # Sadly the way the views in the dashboard work doesn't allow
         # for a view's components to emit feedback to the menu entry
         # since those are destroyed every  time the view is hidden thus
         # only the menu entry remains...OR MAYBE NOT XD
 
-	#if self.init_block_enabled: #shouldn't this be: "if NOT enbabled?!
+        global hasinit
         if hasinit:
-		if not self.init_block_enabled:
-            		rospy.logerr(
-                	'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-            		return
+            rospy.logout('hasinit')
+            if not self.init_block_enabled:
+                rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+                return
 
         if not self.yaml_view_buttons:
             return

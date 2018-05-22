@@ -38,6 +38,9 @@ dashboard:
                   - node:
                       name: "turtlesim_node"
                       package: "turtlesim"
+              - node:
+                  name: "turtlesim_node"
+                  package: "turtlesim"
 #              - service: 
 #                  name: "reconfigure_max_speed_to_fast_from_file"
 #              - service: 
