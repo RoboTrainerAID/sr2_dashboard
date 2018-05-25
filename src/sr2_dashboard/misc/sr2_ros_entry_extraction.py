@@ -16,7 +16,9 @@ class IconType():
     type_proc = 1
     type_srv = 2
     type_app = 3
-    type_none = 4
+    type_multi = 4
+    type_kill = 5
+    type_none = 6
 
     inactive = 0
     running = 1
@@ -125,6 +127,10 @@ class IconType():
                     icon_path = sr2path + '/resources/images/default/default_service.svg'
                 elif icon_type == IconType.type_app:
                     icon_path = sr2path + '/resources/images/default/default_app.svg'
+                elif icon_type == IconType.type_multi:
+                    icon_path = sr2path + '/resources/images/default/default_multi.svg'
+                elif icon_type == IconType.type_kill:
+                    icon_path = sr2path + '/resources/images/default/default_kill.svg'
                 else:
                     icon_path = sr2path + '/resources/images/default/default_none.svg'
 
@@ -181,7 +187,10 @@ class SR2PkgCmdExtractor:
             icon_type = IconType.type_srv
         elif 'multi' in yamlEntry:
             type = 'multi'
-            icon_type = IconType.type_none
+            icon_type = IconType.type_multi
+        elif 'kill' in yamlEntry: #keep this as last option for the case that kill is also part of an executable call
+            type = 'kill'
+            icon_type = IconType.type_kill
 
         if type:
             if 'package' in yamlEntry[type]:

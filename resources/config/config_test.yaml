@@ -41,6 +41,8 @@ dashboard:
               - node:
                   name: "turtlesim_node"
                   package: "turtlesim"
+              - kill:
+                  name: "turtlesim"
 #              - service: 
 #                  name: "reconfigure_max_speed_to_fast_from_file"
 #              - service: 
@@ -73,3 +75,8 @@ dashboard:
               node:
                   name: "turtlesim_node"
                   package: "turtlesim"
+        - name: "Kill turtlesim"
+          type: "noview"
+          menu_entry:
+              kill:
+                  name: "turtlesim"

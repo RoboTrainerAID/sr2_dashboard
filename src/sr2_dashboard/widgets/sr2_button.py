@@ -120,7 +120,7 @@ def setupPushButton(widget, type = ''):
             widget.reply_msgL = QLabel('Reply message:', widget)
             widget.reply_msgL.setWordWrap(True)
             info_layout.addWidget(widget.reply_msgL)
-        elif not 'multi' == type:
+        elif not 'multi' == type and not 'kill' == type:
             if 'default_' in widget.icon:
                 info_layout = QVBoxLayout()
                 service_nameL = QLabel(widget)
@@ -203,6 +203,9 @@ class SR2Button():
                 elif type == 'multi':
                     # Multi-Type type
                     return SR2ButtonMulti(yamlEntry['multi'], name, icon, parent, parent_button)
+                elif type == 'kill':
+                    # Kill type
+                    return SR2ButtonKill(yamlEntry['kill'], name, icon, parent, parent_button)
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
@@ -242,6 +245,9 @@ class SR2Button():
             elif type == 'multi':
                     # Multi-Type type
                     return SR2ViewButtonMulti(yaml_entry_data['multi'], name, icon, parent, parent_button)
+            elif type == 'kill':
+                    # Kill type
+                    return SR2ViewButtonKill(yaml_entry_data['kill'], name, icon, parent, parent_button)
             else:
                 # External process (roslaunch, rosrun or app)
                 return SR2ViewButtonExtProcess(yaml_entry_data[type], type, name, display_name, icon, parent, parent_button)
@@ -313,6 +319,12 @@ class SR2ButtonDefault(QWidget):
                 self.params = yamlEntry['params']
                 if 'toggle_params' in yamlEntry:
                     self.toggle_params = yamlEntry['toggle_params']
+            return
+          
+        elif 'kill' == type:
+            self.kill = yamlEntry['name']
+            if '/' not in self.kill:
+                self.kill = '/'+self.kill
             return
           
         #if button calls a node/app/launch-file        
@@ -929,6 +941,48 @@ class SR2ViewButtonMulti(SR2ButtonMulti):
     
     def setStatusStyle(self, status):
         self.button.setStyleSheet(pushButtonStatusStyle(self, status))
+
+##########################################################################
+# SR2ButtonKill
+##########################################################################
+
+class SR2ButtonKill(SR2ButtonDefault):
+    '''
+    Part of a toolbar; kills a task
+    '''
+    
+    kill = '' #task to kill
+
+    def __init__(self, yamlEntry, name, icon, parent=None, parentButton=None):
+        super(SR2ButtonKill, self).__init__(yamlEntry, 'kill', name, icon, parent, parentButton)
+
+    def setupButton(self):
+        self.tooltip = self.name + ' : "' + 'rosnode kill' + ' ' + self.kill
+        self = setupToolButton(self)
+    
+    @pyqtSlot()
+    def call(self):
+        
+        call(['rosnode', 'kill', self.kill])
+
+        if self.parentButton:
+            self.parentButton.reply(True) #TODO any way to really check if it worked?
+
+
+##########################################################################
+# SR2ViewButtonKill
+##########################################################################
+
+class SR2ViewButtonKill(SR2ButtonKill): #cannot inherit from SR2ButtonService because of widget functionality vs button functionality (?)
+    '''
+    Part of a view; kills a task
+    '''
+    def __init__(self, yaml_entry_data, name, icon, parent=None, parentButton=None):
+        super(SR2ViewButtonKill, self).__init__(yaml_entry_data, name, icon, parent, parentButton)
+     
+    def setupButton(self):
+        self.tooltip = self.name + ' : "' + 'rosnode kill' + ' ' + self.kill
+        self = setupPushButton(self, 'kill')
 
 ##########################################################################
 # SR2ToolbarButtonWithView
