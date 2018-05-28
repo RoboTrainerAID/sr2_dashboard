@@ -1,18 +1,13 @@
 
 # Author: Aleksandar Vladimirov Atanasov
+# Co-Author: Gilbert Groten
 # Description: A SR2 buttons (for both toolbar and view widgets)
 
 # YAML
 from yaml import YAMLError
 
-# PyQt
-# QtGui modules
-#from python_qt_binding.QtGui import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton # Qt4
 from python_qt_binding.QtWidgets import QPushButton, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QGridLayout, QSpacerItem, QSizePolicy, QFrame, QToolButton
-# QtCore modules
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
-# from PyQt4.QtSvg import QSvgRenderer
-# NOTE: If icons and pixmaps are to be used at some point in the future see http://stackoverflow.com/a/35138314/1559401 for SVG rendering as well as http://www.qtcentre.org/threads/7321-Loading-SVG-icons
 
 import roslib
 roslib.load_manifest('sr2_dashboard')
@@ -58,6 +53,7 @@ def pushButtonStyle(icon, r = None, g = None, b = None, margin = None, border_ra
 def toolButtonStyle(icon, r = None, g = None, b = None, margin = None, border_radius = None):
     return buttonStyle('QToolButton', icon, r, g, b, margin, border_radius)
 
+#creates a stylesheet depending on the status of a button
 def statusStyle(widget, status, type):
     if status == ProcStatus.INACTIVE or status == ProcStatus.FINISHED:
         return buttonStyle(type, widget.icon)
@@ -68,9 +64,11 @@ def statusStyle(widget, status, type):
     elif status == ProcStatus.FAILED_STOP:
         return buttonStyle(type, widget.icon, 215, 56, 56)
 
+#creates a stylesheet depending on the status of a button for toolbar-buttons
 def toolButtonStatusStyle(widget, status):
     return statusStyle(widget, status, 'QToolButton')
-  
+
+#creates a stylesheet depending on the status of a button for view buttons
 def pushButtonStatusStyle(widget, status):
     return statusStyle(widget, status,'QPushButton')
 
@@ -107,7 +105,7 @@ def setupPushButton(widget, type = ''):
         widget.button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         widget.button.setObjectName(widget.name)
         widget.button.icon = widget.icon
-        #layout to display information regarding the process
+        #layout to display information regarding the process (description labels)
         info_layout = QVBoxLayout()
         if 'service' == type:
             service_nameL = QLabel('Service: ' + widget.srv_name, widget)
@@ -181,8 +179,7 @@ class SR2Button():
         type = ''
         icon = ''
 
-        #rospy.logwarn(yaml_entry_data)
-
+        #find out what kind of UI element we are currently reading from the yaml-config and create the widget to display it
         if 'type' in yaml_entry_data:
             yamlEntry = yaml_entry_data['menu_entry']
             # We have an entry that is part of the toolbar
@@ -252,6 +249,7 @@ class SR2Button():
 
 ############## SR2Divisor ############
 
+#widget to seperate groups of toolbutton entries from eachother
 class SR2Divisor(QLabel):
   
     def __init__(self, name, icon, parent = None):
@@ -260,19 +258,9 @@ class SR2Divisor(QLabel):
         
         super(SR2Divisor, self).__init__()
         
-        #self.enabled = False
-        #self.icon = icon
-        #style = toolButtonStyle(icon)
-        #self.setStyleSheet(style)
         self.setFixedSize(QSize(36, 36))
         self.setObjectName(name)
         self.name = name
-        #self.setToolTip(self.name)
-
-        #self.statusOkay = True  # Used for activating the acknowledgement mode where the user has to confirm the error before trying to launch the process again
-        #self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
-        #self.toggleControl = False
-        #self.setToolTip('Divisor ' + self.name)
         self.setText('|')
 
 
@@ -283,6 +271,7 @@ class SR2Divisor(QLabel):
 #basic setup for all buttons
 class SR2ButtonDefault(QWidget):
     
+    #identify the parameters for this element TODO redistribute onto child classes?
     def parse_yaml_entry(self, yamlEntry, type):
       
         if 'multi' == type:
@@ -319,6 +308,7 @@ class SR2ButtonDefault(QWidget):
                     self.toggle_params = yamlEntry['toggle_params']
             return
           
+        #if the button is only meant to kill a rosnode
         elif 'kill' == type:
             self.kill = yamlEntry['name']
             if '/' not in self.kill:
@@ -363,7 +353,7 @@ class SR2ButtonDefault(QWidget):
     def __init__(self, yamlEntry, type, name, icon, parent=None, parentButton=None):
       
         self.parent = parent
-        self.parentButton = parentButton
+        self.parentButton = parentButton #meant for use of 'multi' buttons or views with hidden functionality
       
         self.parse_yaml_entry(yamlEntry, type)
         
@@ -405,8 +395,7 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
 
         self.active = False    # Whenever button is clicked and a process is launched successfully self.active is set to True until status is received that process is no longer running | this variable is used to deactivate the start-trigger
         self.toggleControl = False
-        self.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') +
-                        ((' ' + self.args) if self.args else '') + '"' + ' inactive')
+        self.setToolTip('Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' inactive')
 
         self.mutex_recovery = QMutex()
         self.mutex_status = QMutex()
@@ -574,6 +563,7 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
         self.active = True
         self.statusOkay = True
         
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.setStyleSheet(toolButtonStatusStyle(self, status))
         
@@ -651,6 +641,7 @@ class SR2ViewButtonExtProcess(SR2ButtonExtProcess):
         self.tooltip = 'Ext.process "' + self.cmd + ((' ' + self.pkg) if self.pkg else '') + ((' ' + self.args) if self.args else '') + '"' + ' inactive'
         setupPushButton(self)
         
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.button.setStyleSheet(pushButtonStatusStyle(self, status))
 
@@ -733,6 +724,7 @@ class SR2ButtonService(SR2ButtonDefault):
                 'SR2: Service call is currently being processed. Please wait...')
             self.disabled = True
 
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self):
         if self.disabled:
             style = toolButtonStyle(self.icon, 89, 205, 139)
@@ -815,6 +807,7 @@ class SR2ViewButtonService(SR2ButtonService): #cannot inherit from SR2ButtonServ
         self.tooltip = 'Service call "' + self.srv_name + '" with timeout  ' + str(self.timeout) + 's inactive'
         self = setupPushButton(self, 'service')
     
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self):
         if not self.statusOkay:
             style = pushButtonStyle(self.icon)
@@ -883,6 +876,7 @@ class SR2ButtonMulti(SR2ButtonDefault):
             
             #self.button.clicked.connect(self.call)
             
+    #call all tasks that are linked to this button
     def call(self):
         
         if self.statusOkay:
@@ -929,6 +923,7 @@ class SR2ButtonMulti(SR2ButtonDefault):
         self.tooltip = 'Execute multiple commands'
         self = setupToolButton(self)
         
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.button.setStyleSheet(pushButtonStatusStyle(self, status))
             
@@ -936,7 +931,8 @@ class SR2ViewButtonMulti(SR2ButtonMulti):
     def setupButton(self):
         self.tooltip = 'Execute multiple commands'
         self = setupPushButton(self, 'multi')
-    
+        
+    #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.button.setStyleSheet(pushButtonStatusStyle(self, status))
 
