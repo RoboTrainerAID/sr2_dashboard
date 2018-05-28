@@ -110,10 +110,9 @@ def setupPushButton(widget, type = ''):
         #layout to display information regarding the process
         info_layout = QVBoxLayout()
         if 'service' == type:
-            if 'default_' in widget.icon:
-                service_nameL = QLabel('Service: ' + widget.srv_name, widget)
-                service_nameL.setWordWrap(True)
-                info_layout.addWidget(service_nameL)
+            service_nameL = QLabel('Service: ' + widget.srv_name, widget)
+            service_nameL.setWordWrap(True)
+            info_layout.addWidget(service_nameL)
             widget.reply_statL = QLabel('Reply status:', widget)
             widget.reply_statL.setWordWrap(True)
             info_layout.addWidget(widget.reply_statL)
@@ -121,21 +120,20 @@ def setupPushButton(widget, type = ''):
             widget.reply_msgL.setWordWrap(True)
             info_layout.addWidget(widget.reply_msgL)
         elif not 'multi' == type and not 'kill' == type:
-            if 'default_' in widget.icon:
-                info_layout = QVBoxLayout()
-                service_nameL = QLabel(widget)
-                if widget.cmd not in ['roslaunch', 'rosrun']:
-                    if widget.display_name:
-                        service_nameL.setText('App: ' + widget.display_name)
-                    else:
-                        service_nameL.setText('App: ' + widget.cmd)
+            info_layout = QVBoxLayout()
+            service_nameL = QLabel(widget)
+            if widget.cmd not in ['roslaunch', 'rosrun']:
+                if widget.display_name:
+                    service_nameL.setText('App: ' + widget.display_name)
                 else:
-                    if widget.display_name:
-                        service_nameL.setText('External process: ' + widget.display_name)
-                    else:
-                        service_nameL.setText('External process: ' + widget.args.replace('.launch', ''))
-                service_nameL.setWordWrap(True)
-                info_layout.addWidget(service_nameL)
+                    service_nameL.setText('App: ' + widget.cmd)
+            else:
+                if widget.display_name:
+                    service_nameL.setText('External process: ' + widget.display_name)
+                else:
+                    service_nameL.setText('External process: ' + widget.args.replace('.launch', ''))
+            service_nameL.setWordWrap(True)
+            info_layout.addWidget(service_nameL)
         line = QFrame(widget)
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
