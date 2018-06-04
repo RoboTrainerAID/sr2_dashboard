@@ -565,7 +565,7 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
         
     #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
-        self.setStyleSheet(toolButtonStatusStyle(self, status))
+        self.button.setStyleSheet(toolButtonStatusStyle(self, status))
         
 
 ##########################################################################
@@ -925,7 +925,7 @@ class SR2ButtonMulti(SR2ButtonDefault):
         
     #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
-        self.button.setStyleSheet(pushButtonStatusStyle(self, status))
+        self.button.setStyleSheet(toolButtonStatusStyle(self, status))
             
 class SR2ViewButtonMulti(SR2ButtonMulti):
     def setupButton(self):
