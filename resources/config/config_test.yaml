@@ -39,9 +39,11 @@ dashboard:
                       name: "turtlesim_node"
                       package: "turtlesim"
               - node:
+                  icon: "i can write quite a lot of text now!"
                   name: "turtlesim_node"
                   package: "turtlesim"
               - kill:
+                  icon: "Die, Turtle!"
                   name: "turtlesim"
 #              - service: 
 #                  name: "reconfigure_max_speed_to_fast_from_file"
@@ -69,6 +71,7 @@ dashboard:
                   - node:
                       name: "turtlesim_node"
                       package: "turtlesim"
+              icon: "M"
         - name: "Call a test turtle sim"
           type: "noview"
           menu_entry:
@@ -80,3 +83,5 @@ dashboard:
           menu_entry:
               kill:
                   name: "turtlesim"
+                  icon: "i can write quite a lot of text now!"
+              icon: "K"

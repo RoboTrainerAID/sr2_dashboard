@@ -67,14 +67,15 @@ class IconType():
         '''
         rp = rospkg.RosPack()
         error = False
-
+        sr2path = rp.get_path('sr2_dashboard')
 
 
         try:
             if icon_path:
                 if not IconType.iconIsPath(icon_path):
                     rospy.logwarn('SR2: Icon parameter seems to be string, not path. Will use it as name instead of searching an image')
-                    icon_path = IconType.generateImage(icon_path)
+                    #icon_path = IconType.generateImage(icon_path)
+                    icon_path = sr2path + '/resources/images/default/default_background.svg'
                     return icon_path
                 if icon_path.startswith('~'):
                     icon_path = os.path.expanduser(icon_path)
@@ -118,7 +119,6 @@ class IconType():
                 # Fallback to default
                 rospy.logwarn(
                     'SR2: Unable to find image at given path "%s". Falling back to default', icon_path)
-                sr2path = rp.get_path('sr2_dashboard')
                 if icon_type == IconType.type_view:
                     icon_path = sr2path + '/resources/images/default/default_view.svg'
                 elif icon_type == IconType.type_proc:
@@ -166,6 +166,7 @@ class SR2PkgCmdExtractor:
         icon_path = ''
         icon_type = None
         pkg = ''
+        text = ''
         
         ''''
         namespace = ''
@@ -200,6 +201,9 @@ class SR2PkgCmdExtractor:
             if 'icon' in yamlEntry[type]:
                 icon_path = yamlEntry[type]['icon']
         
+        if not IconType.iconIsPath(icon_path):
+            text = icon_path
+        
         icon = IconType.checkImagePath(icon_path, pkg, icon_type)
         
-        return (type, icon)
+        return (type, icon, text)
