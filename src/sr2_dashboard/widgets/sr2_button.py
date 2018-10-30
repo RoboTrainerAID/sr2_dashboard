@@ -925,7 +925,7 @@ class SR2ButtonPublisher(SR2ButtonDefault):
         
     def setup_publisher(self):
         if self.message_type == 'Float64MultiArray':
-            self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray)
+            self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray, queue_size=1)
         else: self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray, queue_size=1) #TODO enable more types
         
     def setup_message(self):
