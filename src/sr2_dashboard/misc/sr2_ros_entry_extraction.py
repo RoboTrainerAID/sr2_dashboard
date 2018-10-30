@@ -18,7 +18,8 @@ class IconType():
     type_app = 3
     type_multi = 4
     type_kill = 5
-    type_none = 6
+    type_pub = 6
+    type_none = 7
 
     inactive = 0
     running = 1
@@ -192,6 +193,9 @@ class SR2PkgCmdExtractor:
         elif 'kill' in yamlEntry: #keep this as last option for the case that kill is also part of an executable call
             type = 'kill'
             icon_type = IconType.type_kill
+        elif 'publisher' in yamlEntry:
+            type = 'publisher'
+            icon_type = IconType.type_pub
 
         if type:
             if 'package' in yamlEntry[type]:

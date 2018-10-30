@@ -12,6 +12,7 @@ from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqt
 import roslib
 roslib.load_manifest('sr2_dashboard')
 import rospy
+import std_msgs
 # ROS-related  modules: RQT Robot Dashboard
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
 # from rqt_robot_dashboard.widgets import ...
@@ -126,6 +127,14 @@ def setupPushButton(widget, type = ''):
             widget.reply_msgL = QLabel('Reply message:', widget)
             widget.reply_msgL.setWordWrap(True)
             info_layout.addWidget(widget.reply_msgL)
+        elif 'publisher' == type:
+            publisher_topicL = QLabel('Publisher Topic: ' + widget.topic, widget)
+            publisher_topicL.setWordWrap(True)
+            info_layout.addWidget(publisher_topicL)
+            msg_str = ','.join(str(s) for s in widget.message_content)
+            publisher_messageL = QLabel('Publisher Message: ' + msg_str, widget)
+            publisher_messageL.setWordWrap(True)
+            info_layout.addWidget(publisher_messageL)
         elif not 'multi' == type and not 'kill' == type:
             info_layout = QVBoxLayout()
             service_nameL = QLabel(widget)
@@ -204,6 +213,8 @@ class SR2Button():
                             'SR2: Trying to create noview service button but service target is empty')
                         return None
                     return SR2ButtonService(yamlEntry['service'], type, name, icon, text, parent, parent_button)
+                elif type == 'publisher':
+                    return SR2ButtonPublisher(yamlEntry['publisher'], name, icon, text, parent, parent_button)
                 elif type == 'multi':
                     # Multi-Type type
                     return SR2ButtonMulti(yamlEntry['multi'], name, icon, text, parent, parent_button)
@@ -246,6 +257,9 @@ class SR2Button():
                     rospy.logerr('SR2: Trying to create noview service button but service target is empty')
                     return None
                 return SR2ViewButtonService(yaml_entry_data['service'], name, display_name, icon, text, parent, parent_button)
+            elif type == 'publisher':
+                    # Publisher type
+                    return SR2ViewButtonPublisher(yaml_entry_data['publisher'], name, icon, text, parent, parent_button)
             elif type == 'multi':
                     # Multi-Type type
                     return SR2ViewButtonMulti(yaml_entry_data['multi'], name, icon, text, parent, parent_button)
@@ -317,6 +331,15 @@ class SR2ButtonDefault(QWidget):
                 self.params = yamlEntry['params']
                 if 'toggle_params' in yamlEntry:
                     self.toggle_params = yamlEntry['toggle_params']
+            return
+          
+        elif 'publisher' == type:
+            self.topic = yamlEntry['topic']
+            self.message_content = yamlEntry['message']
+            if 'message_type' in yamlEntry:
+              self.message_type = yamlEntry['message_type']
+            else:
+              self.message_type = 'Float64MultiArray'
             return
           
         #if the button is only meant to kill a rosnode
@@ -820,11 +843,11 @@ class SR2ButtonService(SR2ButtonDefault):
             self.srv_name + '"</nobr><br/>Reply: ' + msg
 
         self.setToolTip(self.tooltip)
-        self.setStyleSheet(style)
+        self.setStyleSheet(style) 
 
 
 ##########################################################################
-# SR2ViewButtonS
+# SR2ViewButtonService
 ##########################################################################
 class SR2ViewButtonService(SR2ButtonService): #cannot inherit from SR2ButtonService because of widget functionality vs button functionality (?)
     '''
@@ -883,6 +906,52 @@ class SR2ViewButtonService(SR2ButtonService): #cannot inherit from SR2ButtonServ
 
         self.button.setStyleSheet(style)
         self.button.setDisabled(False)
+
+##########################################################################
+# SR2ToolbarButtonPublisher
+##########################################################################
+
+class SR2ButtonPublisher(SR2ButtonDefault):
+  
+    def __init__(self, yaml_content, name, icon, text, parent = None, parent_button = None):
+        super(SR2ButtonPublisher, self).__init__(yaml_content, 'publisher', name, icon, text, parent, parent_button)
+
+        self.setup_publisher()
+        self.setup_message()
+        
+    def setupButton(self):
+        self.tooltip = self.name + ' : "' + 'publish message' + ' '
+        self = setupToolButton(self, 'publisher')
+        
+    def setup_publisher(self):
+        if self.message_type == 'Float64MultiArray':
+            self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray)
+        else: self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray, queue_size=1) #TODO enable more types
+        
+    def setup_message(self):
+        if self.message_type == 'Float64MultiArray':
+            self.message = std_msgs.msg.Float64MultiArray()
+        else: self.message = std_msgs.msg.Float64MultiArray() #TODO enable more types
+
+        self.message.data = self.message_content
+        
+    def call(self):
+        rospy.loginfo('called publisher ' + self.topic)
+        rospy.sleep(1)
+        self.publisher.publish(self.message)
+        
+##########################################################################
+# SR2ViewButtonPublisher
+##########################################################################
+
+class SR2ViewButtonPublisher(SR2ButtonPublisher):
+      
+      def __init__(self, yaml_content, name, icon, text, parent = None, parent_button = None):
+        super(SR2ViewButtonPublisher, self).__init__(yaml_content, name, icon, text, parent, parent_button)
+
+      def setupButton(self):
+        self.tooltip = self.name + ' : "' + 'publish message' + ' '
+        self = setupPushButton(self, 'publisher')
 
 ##########################################################################
 # SR2ToolbarButtonMulti

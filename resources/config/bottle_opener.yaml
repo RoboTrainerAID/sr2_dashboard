@@ -1,0 +1,64 @@
+dashboard:
+#  init: # Critical component representing an external process that is crucial
+#        # for the proper working of the whole system. Until it is running the
+#        # rest of the toolbar components are disabled
+#        # In case it is terminated/crashes the rest of the toolbar components will be disabled
+#        # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
+#    name: "Initialization"
+#    type: "noview"
+#    menu_entry:
+#      #package: "cob_bringup"
+#      #launch: "robot"
+#      package: "lt"
+#      launch: "talker"
+
+  menus:
+    - modules:
+        - name: "Move Arm"
+          type: "view"
+          menu_entry:
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - publisher:
+                  name: 'home'
+                  icon: 'home'
+                  topic: '/arm/joint_trajectory_controller/command'
+                  message: [0,0,0,0,0,0]
+              - publisher:
+                  name: "fold"
+                  icon: "fold"
+                  topic: '/arm/joint_trajectory_controller/command'
+                  message: [0,-0.7462504282752155, -0.5695882013883494, -1.0179807395182126, 0.03600614246864302, 0.49300315381083826]
+              - publisher:
+                  name: "left"
+                  icon: "left"
+                  topic: '/arm/joint_trajectory_controller/command'
+                  message: [0, 0.321033880484058, 0.49950722659008573, -0.4061025056033145, -0.2370251233291425, 5.300248440143207e-06]
+              - publisher:
+                  name: "right"
+                  icon: "right"
+                  topic: '/arm/joint_trajectory_controller/command'
+                  message: [0, 0.4741062629069983, -0.7912476227793528, 0.0041526706870680385, -2.4662076334003302e-05, 2.4489075676648042e-05]
+              - publisher:
+                  name: "force start"
+                  icon: "force start"
+                  topic: '/arm/joint_trajectory_controller/command'
+                  message: [0, 0, 1.57, 0, 1.57, 0]
+                
+        - name: "Bottle Opener"
+          type: "view"
+          menu_entry:
+            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            buttons:
+              - service:
+                  name: "standardBottleTrigger"
+                  icon: "standard"
+              - service:
+                  name: "smallBottleTrigger"
+                  icon: "small"
+              - service:
+                  name: "startTrigger"
+                  icon: "start"
+              - service:
+                  name: "resetTrigger"
+                  icon: "reset"
