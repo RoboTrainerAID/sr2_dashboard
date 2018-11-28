@@ -15,12 +15,14 @@
   <build_depend>rospy</build_depend>
   <build_depend>rqt_gui_cpp</build_depend>
   <build_depend>rqt_robot_dashboard</build_depend>
+  <build_depend>rospy_message_converter</build_depend>
   <run_depend>cob_msgs</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>roslib</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>rqt_gui_cpp</run_depend>
   <run_depend>rqt_robot_dashboard</run_depend>
+  <run_depend>rospy_message_converter</run_depend>
 
   <export>
     <rqt_gui plugin="${prefix}/plugin.xml"/>
