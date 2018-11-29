@@ -939,7 +939,7 @@ class SR2ButtonPublisher(SR2ButtonDefault):
         self.message = message_converter.convert_dictionary_to_ros_message(msg_class, message)
         if hasattr(msg_class, 'header'):
             h = std_msgs.msg.Header()
-            h.stamp = rospy.Time.now() + ros.Duration(1.0)
+            h.stamp = rospy.Time.now()
             message.header = h
         
     def call(self):
