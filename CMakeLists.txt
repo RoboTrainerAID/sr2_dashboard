@@ -11,6 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   rqt_gui_cpp
   rqt_robot_dashboard
+  rospy_message_converter
 )
 
 ## System dependencies are found with CMake's conventions
@@ -85,7 +86,7 @@ catkin_python_setup()
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES sr2_dashboard
-  CATKIN_DEPENDS cob_msgs roscpp roslib rospy rqt_gui_cpp rqt_robot_dashboard
+  CATKIN_DEPENDS cob_msgs roscpp roslib rospy rqt_gui_cpp rqt_robot_dashboard rospy_message_converter
   DEPENDS system_lib
 )
 

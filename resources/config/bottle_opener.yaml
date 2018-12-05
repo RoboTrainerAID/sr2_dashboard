@@ -15,16 +15,7 @@ dashboard:
   menus:
   
     - modules:
-        - name: "Baum"
-          type: "noview"
-          menu_entry:
-            publisher:
-              name: 'home'
-              icon: 'home'
-              topic: '/arm/joint_trajectory_controller/command'
-              message_type: 'trajectory_msgs/JointTrajectory'
-              message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0,0,0,0,0,0], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
-  
+    
         - name: "Move Arm"
           type: "view"
           menu_entry:

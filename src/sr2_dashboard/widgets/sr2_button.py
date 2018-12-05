@@ -10,12 +10,22 @@ from python_qt_binding.QtWidgets import QPushButton, QWidget, QVBoxLayout, QHBox
 from python_qt_binding.QtCore import QMutex, QMutexLocker, QTimer, QThread, pyqtSlot, pyqtSignal, QThreadPool, QSize
 
 import roslib
+import roslib.message
 roslib.load_manifest('sr2_dashboard')
+#ROS-related  modules: 
 import rospy
+import importlib
+from rospy_message_converter import message_converter
+import ast
 import std_msgs
-# ROS-related  modules: RQT Robot Dashboard
+import trajectory_msgs
+import tf2_msgs.msg
+import sensor_msgs.msg
+import geometry_msgs.msg
+import tf2_geometry_msgs
+import re
+#RQT Robot Dashboard
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
-# from rqt_robot_dashboard.widgets import ...
 
 from ..misc.sr2_monitor_object import SR2Worker, ProcStatus
 from ..misc.sr2_runnable_object import SR2ServiceRunnable
@@ -357,10 +367,7 @@ class SR2ButtonDefault(QWidget):
         elif 'publisher' == type:
             self.topic = yamlEntry['topic']
             self.message_content = yamlEntry['message']
-            if 'message_type' in yamlEntry:
-              self.message_type = yamlEntry['message_type']
-            else:
-              self.message_type = 'Float64MultiArray'
+            self.message_type = yamlEntry['message_type']
             return
           
         #if the button is only meant to kill a rosnode
@@ -874,30 +881,40 @@ class SR2ButtonPublisher(SR2ButtonDefault):
   
     def __init__(self, yaml_content, name, icon, text, parent = None, parent_button = None):
         super(SR2ButtonPublisher, self).__init__(yaml_content, 'publisher', name, icon, text, parent, parent_button)
-
         self.setup_publisher()
         self.setup_message()
         
     def setupButton(self):
         self.tooltip = self.name + ' : "' + 'publish message' + ' '
-        self = setupToolButton(self, 'publisher')
+        self = setupToolButton(self)
         
     def setup_publisher(self):
-        if self.message_type == 'Float64MultiArray':
-            self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray, queue_size=1)
-        else: self.publisher = rospy.Publisher(self.topic, std_msgs.msg.Float64MultiArray, queue_size=1) #TODO enable more types
+        pub_class = roslib.message.get_message_class(self.message_type)
+        self.publisher = rospy.Publisher(self.topic, pub_class, queue_size=1)
         
     def setup_message(self):
-        if self.message_type == 'Float64MultiArray':
-            self.message = std_msgs.msg.Float64MultiArray()
-        else: self.message = std_msgs.msg.Float64MultiArray() #TODO enable more types
-
-        self.message.data = self.message_content
+        msg_class = self.message_type
+        message = self.message_content
+        self.message = message_converter.convert_dictionary_to_ros_message(msg_class, message)
+        if hasattr(msg_class, 'header'):
+            h = std_msgs.msg.Header()
+            h.stamp = rospy.Time.now()
+            message.header = h
         
     def call(self):
         rospy.loginfo('called publisher ' + self.topic)
         rospy.sleep(1)
         self.publisher.publish(self.message)
+
+    @pyqtSlot(bool)
+    def block_override(self, block_override_flag):
+        '''
+        If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+        :param block_override_flag: enables/disable click action of button
+        '''
+        self.init_block_enabled = block_override_flag
+
         
 ##########################################################################
 # SR2ViewButtonPublisher
@@ -1028,6 +1045,15 @@ class SR2ButtonKill(SR2ButtonDefault):
 
         if self.parentButton:
             self.parentButton.reply(True) #TODO any way to really check if it worked?
+            
+    @pyqtSlot(bool)
+    def block_override(self, block_override_flag):
+        '''
+        If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+        :param block_override_flag: enables/disable click action of button
+        '''
+        self.init_block_enabled = block_override_flag
 
 
 ##########################################################################
