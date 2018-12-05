@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+
+<!-- copied this here to make shure it doesn't get lost. this woould normally belong into the 'iirob_powerball_bringup' package to be launched this way -->
+
+<launch>
+
+  <!-- from robot_with_bottle_opener.launch -->
+    <arg name="simulation" default="false" />
+    <arg name="moveit" default="false" />
+    <arg name="use_fts" default="true" />
+    <arg name="scenario" value="bottle_opener"/>
+  
+  <!-- from robot_with_fts.launch -->
+      <!-- Sensor -->
+      <rosparam command="load" ns="/arm" file="$(find iirob_powerball_bringup)/config/robot_with_$(arg scenario)_configuration.yaml"/>
+      <rosparam command="load" ns="/arm/Calibration/Offset" file="$(find iirob_powerball_bringup)/config/robot_with_$(arg scenario)_offset.yaml"/>
+      
+      <rosparam command="load" ns="/arm/GravityCompensation/params" file="$(find iirob_description)/tools/urdf/$(arg scenario)/powerball_gravity.yaml"/>
+        
+      <!-- controllers -->
+      <rosparam ns="arm" command="load" file="$(find iirob_powerball_bringup)/config/force_torque_controller.yaml" />
+      <rosparam command="load" file="$(find iirob_powerball_bringup)/config/powerball_force_torque_controller.yaml" />
+      <param name="/arm/force_position_controller/endeffector_frame" value="$(arg scenario)_tcp_link" />
+
+      <!-- start_controllers -->
+      <node ns="arm" name="force_position_controller_spawner" pkg="controller_manager" type="controller_manager" args="load force_position_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="force_velocity_controller_spawner" pkg="controller_manager" type="controller_manager" args="load force_velocity_controller" respawn="false" output="screen"/>
+
+  <!-- from robot.launch -->
+      <!-- send urdf to param server -->
+      <param name="robot_description" command="$(find xacro)/xacro --inorder '$(find iirob_powerball_bringup)/urdf/robot_$(arg scenario).urdf.xacro'" />
+
+      <!-- robot state publisher -->
+      <node ns="arm" pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+          <param name="publish_frequency" type="double" value="200.0" />
+          <param name="tf_prefix" type="string" value="" />
+      </node>
+      
+      <!-- LWA4P -->
+      <group if= "$(arg simulation)" >
+        <!-- start gazebo with empty world -->
+        <include file="$(find gazebo_ros)/launch/empty_world.launch">
+            <arg name="paused" value="$(arg paused)" />
+            <arg name="gui" value="$(arg gui)" />
+        </include>
+
+        <!-- push robot_description to factory and spawn robot in gazebo -->
+        <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model lwa4p -z 0.01 " respawn="false" output="screen" />
+
+        <!-- fake Calibration and HW-Services -->
+        <node pkg="rostopic" type="rostopic" name="fake_joint_calibration" args="pub /calibrated std_msgs/Bool true" />
+        <node ns="arm" name="gazebo_services" pkg="cob_controller_configuration_gazebo" type="gazebo_services.py"  cwd="node" respawn="false" output="screen"/>
+
+      </group>
+
+      <group unless="$(arg simulation)">
+
+        <node ns="arm" name="driver" pkg="canopen_motor_node" type="canopen_motor_node" output="screen" clear_params="true" launch-prefix="">
+            <rosparam command="load" file="$(find iirob_powerball_bringup)/config/can.yaml" />
+            <rosparam command="load" file="$(find schunk_lwa4p)/config/arm_driver.yaml" />
+            <param name="use_fts" value="$(arg use_fts)"/>
+        </node>
+      </group>
+
+      <!-- controllers -->
+      <rosparam ns="arm" command="load" file="$(find schunk_lwa4p)/config/arm_controller.yaml" />
+      <rosparam ns="arm" command="load" file="$(find iirob_powerball_bringup)/config/iirob_controllers.yaml" />
+      <rosparam ns="arm" command="load" file="$(find schunk_lwa4p)/config/joint_limits.yaml"/>
+
+      <!-- start_controllers -->
+      <node ns="arm" name="arm_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn joint_state_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="joint_trajectory_controller_spawner" pkg="controller_manager" type="controller_manager" args="spawn joint_trajectory_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="joint_group_position_controller_spawner" pkg="controller_manager" type="controller_manager" args="load joint_group_position_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="joint_group_interpol_position_controller_spawner" pkg="controller_manager" type="controller_manager" args="load joint_group_interpol_position_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="joint_group_velocity_controller_spawner" pkg="controller_manager" type="controller_manager" args="load joint_group_velocity_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="interpolated_position_controller_spawner" pkg="controller_manager" type="controller_manager" args="load interpolated_position_controller" respawn="false" output="screen"/>
+      <node ns="arm" name="interpolated_velocity_controller_spawner" pkg="controller_manager" type="controller_manager" args="load interpolated_velocity_controller" respawn="false" output="screen"/>
+
+      <!-- control_mode_adapter -->
+      <node ns="arm" name="joint_states_relay" pkg="topic_tools" type="relay" args="joint_states /joint_states" cwd="node" respawn="true" output="screen"/>
+
+      <!-- default robot config -->
+      <rosparam ns="/script_server/arm" command="load" file="$(find schunk_lwa4p)/config/joint_configurations.yaml" />
+
+      <group if="$(arg moveit)">
+        <!-- Load the URDF, SRDF and other .yaml configuration files on the param server -->
+        <include file="$(find iirob_powerball_moveit_config)/launch/planning_context.launch">
+          <arg name="scenario" value="$(arg scenario)"/>
+          <arg name="load_robot_description" value="false"/>
+        </include>
+        <include file="$(find iirob_powerball_moveit_config)/launch/move_group.launch">
+          <arg name="allow_trajectory_execution" value="true"/>
+          <arg name="fake_execution" value="false"/>
+          <arg name="info" value="true"/>
+        </include>
+      </group>
+
+</launch>
