@@ -1,16 +1,16 @@
 dashboard:
-#  init: # Critical component representing an external process that is crucial
-#        # for the proper working of the whole system. Until it is running the
-#        # rest of the toolbar components are disabled
-#        # In case it is terminated/crashes the rest of the toolbar components will be disabled
-#        # (even if one or more of them (incl. views) run ext.processes that are independent from the critical process)
-#    name: "Initialization"
-#    type: "noview"
-#    menu_entry:
-#      #package: "cob_bringup"
-#      #launch: "robot"
-#      package: "lt"
-#      launch: "talker"
+  init:
+      name: "Initialization"
+      type: "noview"
+      menu_entry:
+          multi:
+            - launch:
+                  name: "robot_with_bottle_opener_via_universal_dashboard.launch"
+                  package: "iirob_powerball_bringup"
+            - service:
+                  name: "arm/driver/init"
+                  timeout: 5
+        
 
   menus:
     - modules:
@@ -44,6 +44,17 @@ dashboard:
                   icon: "force start"
                   topic: '/arm/joint_trajectory_controller/command'
                   message: [0, 0, 1.57, 0, 1.57, 0]
+              - service:
+                  name: "arm/driver/init"
+                  icon: "Init All"
+                  timeout: 5
+              - multi:
+                  - launch:
+                      name: "robot_with_bottle_opener_via_universal_dashboard.launch"
+                      package: "iirob_powerball_bringup"
+                  - service:
+                      name: "arm/driver/init"
+                      timeout: 5
                 
         - name: "Bottle Opener"
           type: "view"
@@ -62,3 +73,15 @@ dashboard:
               - service:
                   name: "resetTrigger"
                   icon: "reset"
+                  
+        - name: "Test"
+          type: "noview"
+          icon: "icon"
+          menu_entry:
+            multi:
+              - launch:
+                    name: "robot_with_bottle_opener_via_universal_dashboard.launch"
+                    package: "iirob_powerball_bringup"
+              - service:
+                    name: "arm/driver/init"
+                    timeout: 5

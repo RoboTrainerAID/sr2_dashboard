@@ -196,6 +196,7 @@ class SR2Button():
 
         type = ''
         icon = ''
+        global hasinit
 
         #find out what kind of UI element we are currently reading from the yaml-config and create the widget to display it
         if 'type' in yaml_entry_data:
@@ -204,7 +205,11 @@ class SR2Button():
             if yaml_entry_data['type'] == 'noview':
                 type, icon, text = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
                 if (not type):
-                    return None
+                    type, icon, text = SR2PkgCmdExtractor.getRosPkgCmdData(yaml_entry_data)
+                    if (not type):
+                        rospy.logerr("SR2: Could not find the type of a given Entry!")
+                        rospy.logerr(yamlEntry)
+                        return None
                 rospy.logdebug('\n----------------------------------\n\tCREATE TOOLBAR BUTTON\n\t@Name: %s\n\t@yamlEntry: %s----------------------------------', name, yamlEntry)
                 if type == 'service':
                     # Service
@@ -212,21 +217,37 @@ class SR2Button():
                         rospy.logerr(
                             'SR2: Trying to create noview service button but service target is empty')
                         return None
-                    return SR2ButtonService(yamlEntry['service'], type, name, icon, text, parent, parent_button)
+                    if init:
+                        hasinit = True
+                        return SR2ButtonInitService(yamlEntry['service'], type, name, icon, text, parent, parent_button)
+                    else:
+                        return SR2ButtonService(yamlEntry['service'], type, name, icon, text, parent, parent_button)
                 elif type == 'publisher':
-                    return SR2ButtonPublisher(yamlEntry['publisher'], name, icon, text, parent, parent_button)
+                    #message publisher
+                    if init:
+                        hasinit = True
+                        return SR2ButtonInitPublisher(yamlEntry['publisher'], name, icon, text, parent, parent_button)
+                    else:
+                        return SR2ButtonPublisher(yamlEntry['publisher'], name, icon, text, parent, parent_button)
                 elif type == 'multi':
                     # Multi-Type type
-                    return SR2ButtonMulti(yamlEntry['multi'], name, icon, text, parent, parent_button)
+                    if init:
+                        hasinit = True
+                        return SR2ButtonInitMulti(yamlEntry['multi'], name, icon, text, parent, parent_button)
+                    else:
+                        return SR2ButtonMulti(yamlEntry['multi'], name, icon, text, parent, parent_button)
                 elif type == 'kill':
                     # Kill type
-                    return SR2ButtonKill(yamlEntry['kill'], name, icon, text, parent, parent_button)
+                    if init:
+                        hasinit = True
+                        return SR2ButtonInitKill(yamlEntry['kill'], name, icon, text, parent, parent_button)
+                    else:
+                        return SR2ButtonKill(yamlEntry['kill'], name, icon, text, parent, parent_button)
                 else:
                     # External process (roslaunch, rosrun or app)
                     if init:
-                        global hasinit
                         hasinit = True
-                        return SR2ButtonInitExtProcess(name, cmd, pkg, args, icon, text, parent)
+                        return SR2ButtonInitExtProcess(yamlEntry[type], type, name, icon, text, parent)
                     else:
                         return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, text, parent, parent_button)
             elif yaml_entry_data['type'] == 'view':
@@ -425,7 +446,7 @@ class SR2ButtonDefault(QWidget):
         self.init_block_enabled = True
 
 ##########################################################################
-# SR2ButtonExtPro
+# SR2ButtonExtProcess
 ##########################################################################
 
 
@@ -441,7 +462,6 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
     def setupButton(self):
         self = setupToolButton(self)
 
-    # TODO Replace IconToolButton with own version (add parent property!)
     def __init__(self, yamlEntry, type, name, icon, text, parent=None, parentButton=None):
 
         super(SR2ButtonExtProcess, self).__init__(yamlEntry, type, name, icon, text, parent, parentButton)
@@ -585,10 +605,10 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
           - **statusOkay is True but toggleControl is False** - attempt to stop the process
         '''
 
-        if hasinit:
-            if not self.init_block_enabled:  
-                rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-                return
+        #if hasinit:
+        #   if not self.init_block_enabled:  
+        #        rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+        #       return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
@@ -619,67 +639,6 @@ class SR2ButtonExtProcess(SR2ButtonDefault):
     #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.button.setStyleSheet(toolButtonStatusStyle(self, status))
-        
-
-##########################################################################
-# SR2ButtonInitExt
-##########################################################################
-
-
-class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
-    '''
-    Part of a toolbar; gives the ability to start/stop and monitor an external process (roslaunch, rosrun or standalone application)
-    Represents the init YAML entry used for adding a single critical external process which can enable/disable all other entries (currently view-entries are not supported)
-    '''
-
-    block_override = pyqtSignal(bool)  # Connect this to the toolbar component that has to depend on the state of INIT
-
-    def __init__(self, yamlEntry, type, name, icon, text, parent=None):
-      
-        super(SR2ButtonInitExtProcess, self).__init__(name, parent)
-        rospy.logdebug('\n----------------------------------\n\tINIT EXT.PROC\n\t@Name: %s\t@yamlEntry: %s----------------------------------', name, yamlEntry)
-
-    @pyqtSlot(int)
-    def statusChangedReceived(self, status):
-        '''
-        Update the UI based on the status of the running process
-
-        :param status: status of the process started and monitored by the worker
-
-        Following values for status are possible:
-
-          - **INACTIVE/FINISHED** - visual indicator is set to INACTIVE icon; this state indicates that the process has stopped running (without error) or has never been started
-          - **RUNNING** - if process is started successfully visual indicator
-          - **FAILED_START** - occurrs if the attempt to start the process has failed
-          - **FAILED_STOP** - occurrs if the process wasn't stop from the UI but externally (normal exit or crash)
-
-        In case the init external process isn't running a blocking signal is sent to all components connected to this button in order to disable the interaction with them
-        The interaction with other connected buttons is disable until the init external process isn't running again
-        '''
-        super(SR2ButtonInitExtProcess, self).statusChangedReceived(status)
-        if status != ProcStatus.RUNNING:
-            rospy.logerr('SR2: Init ext.process stopped running')
-            self.block_override.emit(True)
-        else:
-            rospy.loginfo(
-                'SR2: Init ext.process is now running. Connected entries can now be used')
-            self.block_override.emit(False)
-
-    @pyqtSlot()
-    def recover(self):
-        '''
-        Sets button in an active mode. Triggered only if recovery of external process was successful
-        In addition it also enables all connected components
-        '''
-        super(SR2ButtonInitExtProcess, self).recover()
-        rospy.loginfo(
-            'SR2: Recovery successful. Connected to running init ext.process. Connected components will be available to the user')
-        self.block_override.emit(False)
-
-##########################################################################
-# SR2ButtonExtProcess
-##########################################################################
-
 
 class SR2ViewButtonExtProcess(SR2ButtonExtProcess):
     '''
@@ -748,11 +707,11 @@ class SR2ButtonService(SR2ButtonDefault):
         
         self.setStatusStyle()
 
-        if hasinit:
-            if self.init_block_enabled:
-                rospy.logerr(
-                    'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-                return
+        #if hasinit:
+        #    if self.init_block_enabled:
+        #        rospy.logerr(
+        #            'SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+        #        return
 
         if not self.statusOkay:
             # If an error has occurred the first thing the user has to do is
@@ -1281,11 +1240,11 @@ class SR2ButtonWithView(QToolButton):
         # only the menu entry remains...OR MAYBE NOT XD
 
         global hasinit
-        if hasinit:
-            rospy.logout('hasinit')
-            if not self.init_block_enabled:
-                rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
-                return
+        #if hasinit:
+        #    rospy.logout('hasinit')
+        #    if not self.init_block_enabled:
+        #        rospy.logerr('SR2: Init ext.process is not running. Unable to control ext.process connected to this button')
+        #        return
 
         if not self.yaml_view_buttons:
             return
@@ -1322,3 +1281,55 @@ class SR2ButtonWithView(QToolButton):
 
     def restore_settings(self, plugin_settings, instance_settings):
         pass
+
+
+##########################################################################
+# SR2ButtonInit*
+##########################################################################
+
+class SR2ButtonInitService(SR2ButtonService):
+  
+    toggle_params = None #will be set in "SR2ButtonDefault.parse_yaml" if necessary
+
+    def __init__(self, yamlEntry, name, icon, text, parent=None, minimal=True, parentButton=None):
+      
+        super(SR2ButtonInitService, self).__init__(yamlEntry, name, icon, text, parent, minimal, parentButton)
+        
+        super(SR2ButtonInitService, self).call()
+
+  
+class SR2ButtonInitPublisher(SR2ButtonPublisher):
+    
+    def __init__(self, yamlEntry, name, icon, text, parent = None, parent_button = None):
+    
+      super(SR2ButtonInitPublisher,self).__init__(yamlEntry, name, icon, text, parent, parent_button)
+  
+      super(SR2ButtonInitPublisher,self).call()
+      
+      
+class SR2ButtonInitMulti(SR2ButtonMulti):
+  
+    def __init__(self, yamlEntry, name, icon, text, parent = None, parent_button = None):
+      
+      super(SR2ButtonInitMulti,self).__init__(yamlEntry, name, icon, text, parent, parent_button)
+      
+      super(SR2ButtonInitMulti,self).call()
+      
+      
+class SR2ButtonInitKill(SR2ButtonKill):
+    
+    def __init__(self, yamlEntry, name, icon, text, parent = None, parent_button = None):
+      
+      super(SR2ButtonInitKill,self).__init__(yamlEntry, name, icon, text, parent, parent_button)
+      
+      super(SR2ButtonInitKill,self).call()
+      
+
+class SR2ButtonInitExtProcess(SR2ButtonExtProcess):
+
+    def __init__(self, yamlEntry, type, name, icon, text, parent=None):
+      
+        super(SR2ButtonInitExtProcess, self).__init__(yamlEntry, type, name, icon, text, parent)
+        
+        super(SR2ButtonInitExtProcess, self).createWorker()
+        super(SR2ButtonInitExtProcess, self).call()
