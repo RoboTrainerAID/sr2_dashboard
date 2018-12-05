@@ -48,13 +48,6 @@ dashboard:
                   name: "arm/driver/init"
                   icon: "Init All"
                   timeout: 5
-              - multi:
-                  - launch:
-                      name: "robot_with_bottle_opener_via_universal_dashboard.launch"
-                      package: "iirob_powerball_bringup"
-                  - service:
-                      name: "arm/driver/init"
-                      timeout: 5
                 
         - name: "Bottle Opener"
           type: "view"

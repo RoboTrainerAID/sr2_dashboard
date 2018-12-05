@@ -984,6 +984,15 @@ class SR2ButtonMulti(SR2ButtonDefault):
     #adapt the style of this button to the current status of execution (aka disabled, running, failed)
     def setStatusStyle(self, status):
         self.button.setStyleSheet(toolButtonStatusStyle(self, status))
+        
+    @pyqtSlot(bool)
+    def block_override(self, block_override_flag):
+        '''
+        If connected to an init entry this slot will disable the interaction with the button if the init external process isn't running
+
+        :param block_override_flag: enables/disable click action of button
+        '''
+        self.init_block_enabled = block_override_flag
             
 class SR2ViewButtonMulti(SR2ButtonMulti):
     def setupButton(self):
