@@ -13,7 +13,18 @@ dashboard:
         
 
   menus:
+  
     - modules:
+        - name: "Baum"
+          type: "noview"
+          menu_entry:
+            publisher:
+              name: 'home'
+              icon: 'home'
+              topic: '/arm/joint_trajectory_controller/command'
+              message_type: 'trajectory_msgs/JointTrajectory'
+              message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0,0,0,0,0,0], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
+  
         - name: "Move Arm"
           type: "view"
           menu_entry:
@@ -23,30 +34,34 @@ dashboard:
                   name: 'home'
                   icon: 'home'
                   topic: '/arm/joint_trajectory_controller/command'
-                  message: [0,0,0,0,0,0]
+                  message_type: 'trajectory_msgs/JointTrajectory'
+                  message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0,0,0,0,0,0], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
               - publisher:
                   name: "fold"
                   icon: "fold"
                   topic: '/arm/joint_trajectory_controller/command'
-                  message: [0,-0.7462504282752155, -0.5695882013883494, -1.0179807395182126, 0.03600614246864302, 0.49300315381083826]
+                  message_type: 'trajectory_msgs/JointTrajectory'
+                  message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0,-0.7462504282752155, -0.5695882013883494, -1.0179807395182126, 0.03600614246864302, 0.49300315381083826], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
               - publisher:
                   name: "left"
                   icon: "left"
                   topic: '/arm/joint_trajectory_controller/command'
-                  message: [0, 0.321033880484058, 0.49950722659008573, -0.4061025056033145, -0.2370251233291425, 5.300248440143207e-06]
+                  message_type: 'trajectory_msgs/JointTrajectory'
+                  message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0, 0.321033880484058, 0.49950722659008573, -0.4061025056033145, -0.2370251233291425, 5.300248440143207e-06], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
               - publisher:
                   name: "right"
                   icon: "right"
                   topic: '/arm/joint_trajectory_controller/command'
-                  message: [0, 0.4741062629069983, -0.7912476227793528, 0.0041526706870680385, -2.4662076334003302e-05, 2.4489075676648042e-05]
+                  message_type: 'trajectory_msgs/JointTrajectory'
+                  message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0, 0.4741062629069983, -0.7912476227793528, 0.0041526706870680385, -2.4662076334003302e-05, 2.4489075676648042e-05], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
               - publisher:
                   name: "force start"
                   icon: "force start"
                   topic: '/arm/joint_trajectory_controller/command'
-                  message: [0, 0, 1.57, 0, 1.57, 0]
+                  message_type: 'trajectory_msgs/JointTrajectory'
+                  message: {'joint_names': ["arm_1_joint","arm_2_joint","arm_3_joint","arm_4_joint","arm_5_joint","arm_6_joint"], 'points': [{'positions':[0, 0, 1.57, 0, 1.57, 0], 'velocities': [0, 0, 0, 0, 0, 0], 'accelerations': [0, 0, 0, 0, 0, 0], 'effort': [0], 'time_from_start': {'secs': 0, 'nsecs': 1}}]}
               - service:
                   name: "arm/driver/init"
-                  icon: "Init All"
                   timeout: 5
                 
         - name: "Bottle Opener"
@@ -66,15 +81,3 @@ dashboard:
               - service:
                   name: "resetTrigger"
                   icon: "reset"
-                  
-        - name: "Test"
-          type: "noview"
-          icon: "icon"
-          menu_entry:
-            multi:
-              - launch:
-                    name: "robot_with_bottle_opener_via_universal_dashboard.launch"
-                    package: "iirob_powerball_bringup"
-              - service:
-                    name: "arm/driver/init"
-                    timeout: 5
