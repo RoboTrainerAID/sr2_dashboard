@@ -75,8 +75,8 @@ class IconType():
             if icon_path:
                 if not IconType.iconIsPath(icon_path):
                     rospy.logwarn('SR2: Icon parameter seems to be string, not path. Will use it as name instead of searching an image')
-                    #icon_path = IconType.generateImage(icon_path)
-                    icon_path = sr2path + '/resources/images/default/default_background.svg'
+                    icon_path = IconType.generateImage(icon_path)
+                    #icon_path = sr2path + '/resources/images/default/default_background.svg'
                     return icon_path
                 if icon_path.startswith('~'):
                     icon_path = os.path.expanduser(icon_path)
@@ -174,36 +174,41 @@ class SR2PkgCmdExtractor:
         yaml_default = '' #for servces that change param values (using dynamic reconfigure), this is the yaml with the content to be loaded when unpressing the button
         yaml_pressed = '' #the content to be loaded when a reconfigure button is pressed
         '''
+        if not view:
+            if 'app' in yamlEntry:
+                type = 'app'
+                icon_type = IconType.type_app
+            elif 'launch' in yamlEntry:
+                type = 'launch'
+                icon_type = IconType.type_proc
+            elif 'node' in yamlEntry:
+                type = 'node'
+                icon_type = IconType.type_proc
+            elif 'service' in yamlEntry:
+                type = 'service'
+                icon_type = IconType.type_srv
+            elif 'multi' in yamlEntry:
+                type = 'multi'
+                icon_type = IconType.type_multi
+            elif 'kill' in yamlEntry: #keep this as last option for the case that kill is also part of an executable call
+                type = 'kill'
+                icon_type = IconType.type_kill
+            elif 'publisher' in yamlEntry:
+                type = 'publisher'
+                icon_type = IconType.type_pub
+            if type:
+                if 'package' in yamlEntry[type]:
+                    pkg = yamlEntry[type]['package']
 
-        if 'app' in yamlEntry:
-            type = 'app'
-            icon_type = IconType.type_app
-        elif 'launch' in yamlEntry:
-            type = 'launch'
-            icon_type = IconType.type_proc
-        elif 'node' in yamlEntry:
-            type = 'node'
-            icon_type = IconType.type_proc
-        elif 'service' in yamlEntry:
-            type = 'service'
-            icon_type = IconType.type_srv
-        elif 'multi' in yamlEntry:
-            type = 'multi'
-            icon_type = IconType.type_multi
-        elif 'kill' in yamlEntry: #keep this as last option for the case that kill is also part of an executable call
-            type = 'kill'
-            icon_type = IconType.type_kill
-        elif 'publisher' in yamlEntry:
-            type = 'publisher'
-            icon_type = IconType.type_pub
+            if type:
+                if 'icon' in yamlEntry[type]:
+                    icon_path = yamlEntry[type]['icon']
+        else:
+            icon_type = IconType.type_view
+            if 'icon' in yamlEntry:
+                icon_path = yamlEntry['icon']
+            
 
-        if type:
-            if 'package' in yamlEntry[type]:
-                pkg = yamlEntry[type]['package']
-
-        if type:
-            if 'icon' in yamlEntry[type]:
-                icon_path = yamlEntry[type]['icon']
         
         if not IconType.iconIsPath(icon_path):
             text = icon_path

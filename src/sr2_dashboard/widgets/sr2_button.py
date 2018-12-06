@@ -262,10 +262,10 @@ class SR2Button():
                         return SR2ButtonExtProcess(yamlEntry[type], type, name, icon, text, parent, parent_button)
             elif yaml_entry_data['type'] == 'view':
                 # View
-                type, icon, text = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry)
+                type, icon, text = SR2PkgCmdExtractor.getRosPkgCmdData(yamlEntry, True)
                 rospy.logdebug(
                     '\n----------------------------------\n\tCREATE TOOLBAR VIEW\n@Yaml_Contents: %s\n----------------------------------', yamlEntry)
-                return SR2ButtonWithView(yamlEntry, type, name, context, init_widget)
+                return SR2ButtonWithView(yamlEntry, type, name, icon, context, init_widget)
             elif yaml_entry_data['type'] == 'divisor':
                 # Divisor
                 icon = IconType.getDivisor()
@@ -1140,19 +1140,12 @@ class SR2ButtonWithView(QToolButton):
         def restore_settings(self, plugin_settings, instance_settings):
             pass
 
-    def __init__(self, yaml_entry_data, child_type, name, context, surpress_overlays=False, minimal=True):
+    def __init__(self, yaml_entry_data, child_type, name, icon, context, surpress_overlays=False, minimal=True):
         super(SR2ButtonWithView, self).__init__()
 
         self.clicked.connect(self.toggleView)
 
-        self.icon = ''
-        if 'icon' in yaml_entry_data:
-            # Set icon: IconType.checkImagePath(yaml_entry_data['icon'],
-            # view=True)
-            self.icon = IconType.checkImagePath(
-                yaml_entry_data['icon'], icon_type=IconType.type_view)
-        else:
-            self.icon = IconType.checkImagePath(icon_type=IconType.type_view)
+        self.icon = icon
 
         self.child_type = child_type
 

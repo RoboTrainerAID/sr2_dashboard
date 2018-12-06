@@ -15,11 +15,25 @@ dashboard:
   menus:
   
     - modules:
+        - name: "Genral"
+          type: "view"
+          menu_entry:
+            icon: "General"
+            buttons:
+              - service:
+                  name: "arm/driver/init"
+                  icon: "init"
+              - service:
+                  name: "arm/driver/recover"
+                  icon: "recover"
+              - service:
+                  name: "arm/driver/halt"
+                  icon: "halt"
     
         - name: "Move Arm"
           type: "view"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            icon: "Move"
             buttons:
               - publisher:
                   name: 'home'
@@ -58,7 +72,7 @@ dashboard:
         - name: "Bottle Opener"
           type: "view"
           menu_entry:
-            icon: "~/catkin_ws/src/sr2_dashboard/resources/images/control/menu/view.svg"
+            icon: "Bottle"
             buttons:
               - service:
                   name: "standardBottleTrigger"
