@@ -75,8 +75,10 @@ class IconType():
             if icon_path:
                 if not IconType.iconIsPath(icon_path):
                     rospy.logwarn('SR2: Icon parameter seems to be string, not path. Will use it as name instead of searching an image')
-                    icon_path = IconType.generateImage(icon_path)
-                    #icon_path = sr2path + '/resources/images/default/default_background.svg'
+                    if icon_type == IconType.type_view:
+                        icon_path = IconType.generateImage(icon_path)
+                    else: 
+                        icon_path = sr2path + '/resources/images/default/default_background.svg'
                     return icon_path
                 if icon_path.startswith('~'):
                     icon_path = os.path.expanduser(icon_path)

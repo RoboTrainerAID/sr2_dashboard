@@ -1,0 +1,6 @@
+<launch>
+  <node name="sr2_dashboard" pkg="sr2_dashboard" type="sr2_dashboard" output="screen">
+    <rosparam command="delete" param="dashboard"/>
+    <rosparam command="load" file="$(find sr2_dashboard)/resources/config/kuka.yaml"/>
+  </node>
+</launch>

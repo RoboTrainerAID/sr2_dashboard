@@ -1234,6 +1234,7 @@ class SR2ButtonWithView(QToolButton):
             self.context.add_widget(self.view_widget)
         except Exception as e:
             self.showException(e)
+            style = toolButtonStyle(self.icon, self.text, 215, 56, 56)
         finally:
             self.setStyleSheet(style)
 

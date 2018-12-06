@@ -1,0 +1,35 @@
+dashboard:
+#  init:
+#      name: "Initialization"
+#      type: "noview"
+#      menu_entry:
+#          multi:
+#            - launch:
+#                  name: "r5_grind_tool.launch"
+#                  package: "iirob_kuka_bringup"
+        
+
+  menus:
+    - modules:
+        - name: "Move Arm"
+          type: "view"
+          menu_entry:
+            icon: "Move"
+            buttons:
+              - service:
+                  name: "controller_manager/switch_controller"
+                  icon: "switch controller"
+                  srv_type: "SwitchController"
+                  params: {'stop_controllers': ['admittance_controller', 'position_trajectory_controller'], 'start_controllers': ['interpolated_cartesian_position_controller'], 'strictness': 1}
+              - publisher:
+                  name: 'start'
+                  icon: 'start'
+                  topic: '/interpolated_cartesian_position_controller/command'
+                  message_type: 'std_msgs/Float64MultiArray'
+                  message: {'data': [0.018747737950, -1.4069159820, 2.1967048437, 0, 0.780919332, -0.37394942], 'layout': {'data_offset': 0, 'dim': [{'label': "start", 'size': 1, 'stride': 1}]}}
+              - publisher:
+                  name: 'home'
+                  icon: 'home'
+                  topic: '/interpolated_cartesian_position_controller/command'
+                  message_type: 'std_msgs/Float64MultiArray'
+                  message: {'data': [0, -1.57, 1.57, 0.0, 1.57, 0.0], 'layout': {'data_offset': 0, 'dim': [{'label': "start", 'size': 1, 'stride': 1}]}}
