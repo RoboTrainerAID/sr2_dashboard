@@ -2,8 +2,9 @@
 # Description: Infrastructure for executing ROS service calls
 
 import rospy
-from std_srvs.srv import Trigger
+from std_srvs.srv import *
 from PyQt5.QtCore import QRunnable, pyqtSignal, QObject
+from subprocess import call #for workarround for broken service types
 import dynamic_reconfigure.client
 
 class ServiceCallSignals(QObject):
@@ -33,7 +34,8 @@ class SR2ServiceRunnable(QRunnable):
         SUCCESS_FALSE = 1
         FAILED = 2
 
-    def __init__(self, service_name, timeout=0):
+    def __init__(self, service_name, timeout=0, srv_type = Trigger, params = None):
+      
         '''
         Initializes the ServiceRunnable
         :param service_name: name of the ROS service that we want to call
@@ -43,6 +45,8 @@ class SR2ServiceRunnable(QRunnable):
         self.signals = ServiceCallSignals()
         self.service = service_name
         self.timeout = timeout
+        self.srv_type = srv_type
+        self.params = params
 
     def run(self):
         '''
@@ -65,21 +69,23 @@ class SR2ServiceRunnable(QRunnable):
 
         self.signals.srv_running.emit(True)
 
+        if isinstance(self.srv_type, str) or  isinstance(self.srv_type, basestring) or self.srv_type is None:
+            call(["rosservice", "call", self.service, str(self.params)])
+            return
+          
         try:
             # See if service is avialable for a given timeout (default 0: wait
             # until available)
             rospy.wait_for_service(self.service, self.timeout)
             # If service is found, call the server and receive a response
-            trigger_call = rospy.ServiceProxy(self.service, Trigger)
-            call = trigger_call()
-            response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
-            response_msg = call.message
+            trigger_call = rospy.ServiceProxy(self.service, self.srv_type)
+            srv_call = trigger_call()
+            response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if srv_call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
+            response_msg = srv_call.message
         except rospy.ROSException, e:
             response_status = SR2ServiceRunnable.CallStatus.FAILED
             response_msg = e.message
-          
-          
-            
+
         self.signals.srv_running.emit(False)
         self.signals.srv_status.emit(response_status, response_msg)
         

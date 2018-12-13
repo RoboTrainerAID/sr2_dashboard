@@ -19,8 +19,8 @@ dashboard:
               - service:
                   name: "controller_manager/switch_controller"
                   icon: "switch controller"
-                  srv_type: "SwitchController"
-                  params: {'stop_controllers': ['admittance_controller', 'position_trajectory_controller'], 'start_controllers': ['interpolated_cartesian_position_controller'], 'strictness': 1}
+                  srv_type: 'controller_manager_msgs/SwitchController'
+                  params: {'start_controllers': ['interpolated_cartesian_position_controller'], 'stop_controllers': ['admittance_controller', 'position_trajectory_controller'], 'strictness': 1}
               - publisher:
                   name: 'start'
                   icon: 'start'

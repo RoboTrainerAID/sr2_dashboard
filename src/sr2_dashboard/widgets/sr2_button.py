@@ -23,6 +23,8 @@ import tf2_msgs.msg
 import sensor_msgs.msg
 import geometry_msgs.msg
 import tf2_geometry_msgs
+import controller_manager_msgs
+from controller_manager_msgs import *
 import re
 #RQT Robot Dashboard
 from rqt_robot_dashboard.icon_tool_button import IconToolButton
@@ -358,7 +360,7 @@ class SR2ButtonDefault(QWidget):
                 self.type = yamlEntry['srv_type']
             else: 
                 self.type = 'trigger'
-            if self.type == 'dynamic_reconfigure':
+            if 'params' in yamlEntry:
                 self.params = yamlEntry['params']
                 if 'toggle_params' in yamlEntry:
                     self.toggle_params = yamlEntry['toggle_params']
@@ -675,6 +677,8 @@ class SR2ButtonService(SR2ButtonDefault):
     '''
     Part of a toolbar; initiates a service call and reports back once service has replied or timeout
     '''
+    params = ''
+
 
     toggle_params = None #will be set in "SR2ButtonDefault.parse_yaml" if necessary
 
@@ -696,8 +700,20 @@ class SR2ButtonService(SR2ButtonDefault):
                 self.toggle_service.setAutoDelete(False)
                 self.toggle_service.signals.srv_running.connect(self.block)
                 self.toggle_service.signals.srv_status.connect(self.reply)
-        else: #Trigger
-            self.service = SR2ServiceRunnable(self.srv_name, self.timeout)
+        else:
+            msg_type = self.type
+            try:
+              msg_type = roslib.message.get_message_class('bullshit')#controller_manager_msgs/SwitchController')#self.type)#, true)
+              if msg_type is None:
+                rospy.logwarn('msg_type still not set. why?! ' + self.type)
+            except:
+              try:
+                msg_type = roslib.message.get_message_class('std_msgs/'+self.type)
+              except:
+                rospy.logerr('SR2: message type is missing package name: '+self.type)
+            if msg_type is None:
+                msg_type = self.type #workarround that will find its conclusion in SR2ServiceRunnable
+            self.service = SR2ServiceRunnable(self.srv_name, self.timeout, msg_type, self.params)
         self.service.setAutoDelete(False)
         self.service.signals.srv_running.connect(self.block)
         self.service.signals.srv_status.connect(self.reply)
