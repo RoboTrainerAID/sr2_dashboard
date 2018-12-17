@@ -1,13 +1,14 @@
 dashboard:
-#  init:
-#      name: "Initialization"
-#      type: "noview"
-#      menu_entry:
-#          multi:
-#            - launch:
-#                  name: "r5_grind_tool.launch"
-#                  package: "iirob_kuka_bringup"
-        
+
+  init:
+    name: "Initialization"
+    type: "noview"
+    menu_entry:
+      service:
+        name: "controller_manager/switch_controller"
+        icon: "switch controller"
+        srv_type: 'controller_manager_msgs/SwitchController'
+        params: {'start_controllers': ['interpolated_cartesian_position_controller'], 'stop_controllers': ['admittance_controller', 'position_trajectory_controller'], 'strictness': 1}
 
   menus:
     - modules:
@@ -16,9 +17,10 @@ dashboard:
           menu_entry:
             icon: "Move"
             buttons:
+              #just in case it failed on init for some reason
               - service:
                   name: "controller_manager/switch_controller"
-                  icon: "switch controller"
+                  icon: "repeat init"
                   srv_type: 'controller_manager_msgs/SwitchController'
                   params: {'start_controllers': ['interpolated_cartesian_position_controller'], 'stop_controllers': ['admittance_controller', 'position_trajectory_controller'], 'strictness': 1}
               - publisher:
