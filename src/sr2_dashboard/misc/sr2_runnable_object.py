@@ -69,7 +69,9 @@ class SR2ServiceRunnable(QRunnable):
 
         self.signals.srv_running.emit(True)
 
+        #if there is something wrong with the "service type" provided: use the console call, which doesn't need a service type
         if isinstance(self.srv_type, str) or  isinstance(self.srv_type, basestring) or self.srv_type is None:
+            rospy.logwarn("SR2: Service type '" + self.srv_type + "' not found! Trying to call service via console.")
             call(["rosservice", "call", self.service, str(self.params)])
             return
           
@@ -80,8 +82,14 @@ class SR2ServiceRunnable(QRunnable):
             # If service is found, call the server and receive a response
             trigger_call = rospy.ServiceProxy(self.service, self.srv_type)
             srv_call = trigger_call()
-            response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if srv_call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
-            response_msg = srv_call.message
+            if hasattr(srv_call, 'success'):
+                response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE if srv_call.success else SR2ServiceRunnable.CallStatus.SUCCESS_FALSE
+            else:
+                response_status = SR2ServiceRunnable.CallStatus.SUCCESS_TRUE #we must assume the call was successful
+            if hasattr(srv_call, 'message'):
+                response_msg = srv_call.message
+            else:
+                response_msg = str(srv_call)
         except rospy.ROSException, e:
             response_status = SR2ServiceRunnable.CallStatus.FAILED
             response_msg = e.message

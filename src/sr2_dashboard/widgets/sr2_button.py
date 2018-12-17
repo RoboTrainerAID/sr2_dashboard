@@ -703,12 +703,12 @@ class SR2ButtonService(SR2ButtonDefault):
         else:
             msg_type = self.type
             try:
-              msg_type = roslib.message.get_message_class('bullshit')#controller_manager_msgs/SwitchController')#self.type)#, true)
+              msg_type = roslib.message.get_service_class(self.type)
               if msg_type is None:
                 rospy.logwarn('msg_type still not set. why?! ' + self.type)
             except:
               try:
-                msg_type = roslib.message.get_message_class('std_msgs/'+self.type)
+                msg_type = roslib.message.get_service_class('std_msgs/'+self.type)
               except:
                 rospy.logerr('SR2: message type is missing package name: '+self.type)
             if msg_type is None:
