@@ -113,7 +113,7 @@ dashboard:
           type: "noview"
           menu_entry:
             app:
-              name:"firefox"
+              name: "firefox"
               icon: "~/catkin_ws/src/sr2_dashboard/resources/images/misc/firefox.svg"
               args: "-new-window www.google.com"
         - name: "Editor"
